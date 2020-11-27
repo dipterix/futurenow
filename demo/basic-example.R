@@ -5,7 +5,7 @@ plan('futurenow', workers=2)
 
 # limit global size to be 1KB
 old_limit <- getOption('future.globals.maxSize', Inf)
-options(future.globals.maxSize = 1024)
+options(future.globals.maxSize = 1024^2)
 
 a <- 'main session'
 b <- rnorm(1e6)

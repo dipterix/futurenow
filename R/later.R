@@ -24,18 +24,29 @@ shiny_futurenow_init <- function(session, delay = 0.1){
 
 }
 
-evallater <- function(fun, delay){
+evallater <- local({
 
-  # check whether this is in shiny
-  if(has_shiny()){
-    # need to run later
-    session <- shiny::getDefaultReactiveDomain()
-    if(!is.function(session$userData$...futurenow_timer)){
-      shiny_futurenow_init(session, delay)
+  last_scheduled <- strptime('19000101010101', "%Y%m%d%H%M%S", tz = 'GMT')
+
+  function(fun, delay){
+
+    # check whether this is in shiny
+    if(has_shiny()){
+      # need to run later
+      session <- shiny::getDefaultReactiveDomain()
+      if(!is.function(session$userData$...futurenow_timer)){
+        shiny_futurenow_init(session, delay)
+      }
+      session$userData$...futurenow_func <- fun
+    } else {
+
+      now <- Sys.time()
+      last_scheduled <<- now
+      fdebug(sprintf("Last scheduled: %.2f s, next event: %.2f",
+                     as.numeric(now - last_scheduled, unit = 'secs'),
+                     later::next_op_secs()))
+      later::later(fun, delay = delay)
     }
-    session$userData$...futurenow_func <- fun
-  } else {
-    later::later(fun, delay = delay)
-  }
 
-}
+  }
+})

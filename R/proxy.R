@@ -58,7 +58,7 @@ eval_from_proxy <- function(statusfile, datafile, resultfile, env){
     saveRDS(e, file = resultfile)
   }, finally = {
     # save status code
-    fdebug(resultfile)
+    # fdebug(resultfile)
     saveRDS(STATUS_MASTER_FINISHED, statusfile)
   })
 }
@@ -117,54 +117,41 @@ listener_blocked <- function(future, max_try = Inf){
 
 }
 
-check_single <- local({
-  last_flag <- '-1'
-  function(future){
-    if(!file.exists(future$extra$statusfile) || !future$extra$listener_enabled) { return(FALSE) }
-    reschedule <- tryCatch({
-      status_code <- as.character(readRDS(future$extra$statusfile))
-      if(length(status_code) != 1){ return(FALSE) }
-      switch (
-        as.character(status_code),
-        '0' = { # STATUS_STOP
-          # if(!isTRUE(last_flag == status_code)){
-          #   fdebug("Non-blockListener captured FINISH code. (0)")
-          #   last_flag <<- status_code
-          # }
-          future$extra$listener_enabled <- FALSE
-          return(FALSE)
-        },
-        '2' = { # STATUS_MASTER_RUNNING
-          # if(!isTRUE(last_flag == status_code)){
-          #   fdebug("Non-blockListener captured MASTER code. Evaluating expressions in master node (2)")
-          #   last_flag <<- status_code
-          # }
+check_single <- function(future){
+  if(!file.exists(future$extra$statusfile) || !future$extra$listener_enabled) { return(FALSE) }
+  reschedule <- tryCatch({
+    status_code <- as.character(readRDS(future$extra$statusfile))
+    if(length(status_code) != 1){ return(FALSE) }
+    switch (
+      as.character(status_code),
+      '0' = { # STATUS_STOP
+        fdebug("Non-blockListener captured FINISH code. (0)")
+        future$extra$listener_enabled <- FALSE
+        return(FALSE)
+      },
+      '2' = { # STATUS_MASTER_RUNNING
+        fdebug("Non-blockListener captured MASTER code. Evaluating expressions in master node (2)")
+        eval_from_proxy(future$extra$statusfile, future$extra$datafile, future$extra$resultfile, future$extra$env)
+      }, {
+        # STATUS_SLAVE_RUNNING: runtime belongs to slave nodes
+        # STATUS_MASTER_FINISHED: slave nodes need to run
+        # STATUS_BUSY: writing data in progress
+        # other code are unknown. reserved for future use
+        #   fdebug(sprintf("Non-blockListener wait... (%s)", status_code))
+      }
+    )
 
-          eval_from_proxy(future$extra$statusfile, future$extra$datafile, future$extra$resultfile, future$extra$env)
-        }, {
-          # STATUS_SLAVE_RUNNING: runtime belongs to slave nodes
-          # STATUS_MASTER_FINISHED: slave nodes need to run
-          # STATUS_BUSY: writing data in progress
-          # other code are unknown. reserved for future use
-          # if(!isTRUE(last_flag == status_code)){
-          #   fdebug(sprintf("Non-blockListener wait... (%s)", status_code))
-          #   last_flag <<- status_code
-          # }
-        }
-      )
+    TRUE
 
-      TRUE
+  }, error = function(e){
+    fdebug("Error: ", e$message)
+    class(e) <- c(ERROR_LISTENER, class(e))
+    saveRDS(e, file = future$extra$resultfile)
+    saveRDS(STATUS_MASTER_FINISHED, future$extra$statusfile)
+    FALSE
+  })
 
-    }, error = function(e){
-      fdebug("Error: ", e$message)
-      class(e) <- c(ERROR_LISTENER, class(e))
-      saveRDS(e, file = future$extra$resultfile)
-      saveRDS(STATUS_MASTER_FINISHED, future$extra$statusfile)
-      FALSE
-    })
-
-  }
-})
+}
 
 listener <- local({
 

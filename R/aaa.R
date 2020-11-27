@@ -17,11 +17,15 @@ fdebug <- function(..., end = '\n', out = getOption('futurenow.debug.file', stdo
 
     is_master <- getOption("futurenow.master.sessionid", Sys.getpid()) == Sys.getpid()
     if(!getOption("futurenow.debug.masteronly", FALSE) || is_master){
-      is_master <- ifelse(isTRUE(is_master), '[%s][master]', '  [%s][slave ]')
-      if(is.character(out)){
-        cat(sprintf(is_master, Sys.getpid()), ..., end, file = out, append = TRUE)
+      if(is_master){
+        fmt <- sprintf("\x1b[31m[%s][master]", Sys.getpid())
       } else {
-        cat(sprintf(is_master, Sys.getpid()), ..., end, file = out)
+        fmt <- sprintf("\x1b[36m  [%s][slave ]", Sys.getpid())
+      }
+      if(is.character(out)){
+        cat(fmt, ..., "\x1b[0m", end, file = out, append = TRUE)
+      } else {
+        cat(fmt, ..., "\x1b[0m", end, file = out)
       }
     }
 
@@ -30,24 +34,19 @@ fdebug <- function(..., end = '\n', out = getOption('futurenow.debug.file', stdo
 }
 
 #' @export
-debug_futurenow <- function(tmpfile = '.debug.log',
+debug_futurenow <- function(tmpfile = stdout(),
                             reset = FALSE, master_only = FALSE){
 
-  log <- getOption("futurenow.debug.file", tmpfile)
-  if(!is.character(log) || !file.exists(log)){
-    log <- tmpfile
+  log <- tmpfile
+  if(!inherits(log, 'connection')){
+    if(!file.exists(log) || reset){
+      writeLines('', log)
+    }
+    log <- normalizePath(log)
+    system(sprintf('open "%s"', log), wait = FALSE)
   }
-
-  if(reset || !file.exists(log)){
-    writeLines('', log)
-  }
-
-  try({
-    log <- normalizePath(log, mustWork = TRUE)
-  }, silent = TRUE)
 
   options("futurenow.debug.file" = log)
-  system(sprintf('open "%s"', log), wait = FALSE)
   options("futurenow.debug" = TRUE)
   options("futurenow.debug.masteronly" = master_only)
   options("futurenow.master.sessionid" = Sys.getpid())

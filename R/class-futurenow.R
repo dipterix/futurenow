@@ -136,80 +136,68 @@ result.FutureNowFuture <- function(future, ...) {
 
 await <- function(...) UseMethod("await")
 
-await.ClusterFuture <- local({
+await.MultisessionFuture <- function(future, ...){
   FutureRegistry <- import_future("FutureRegistry")
   requestNode <- import_future("requestNode")
 
-  function(future, ...){
-    workers <- future$workers
-    reg <- sprintf("workers-%s", attr(workers, "name", exact = TRUE))
-    node_idx <- requestNode(await = function() {
-      futures <- FutureRegistry(reg, action = "list", earlySignal = FALSE)
-      fdebug("Running futures:", length(futures))
-      lapply(futures, listener_blocked, max_try = 3L)
-      # listener_blocked
-      FutureRegistry(reg, action = "collect-first", earlySignal = TRUE)
-    }, workers = workers)
-    node_idx
-  }
-})
+  fdebug("Requesting node...")
+  workers <- future$workers
+  reg <- sprintf("workers-%s", attr(workers, "name", exact = TRUE))
+  # future:::FutureRegistry(reg, 'list')
+  node_idx <- requestNode(await = function() {
+    futures <- FutureRegistry(reg, action = "list", earlySignal = FALSE)
+    fdebug("Running futures (multisession):", length(futures))
+    lapply(futures, listener_blocked, max_try = 3L)
+    # listener_blocked
+    FutureRegistry(reg, action = "collect-first", earlySignal = TRUE)
+  }, workers = workers)
+  node_idx
+}
 
-await.MulticoreFuture <- local({
+await.MulticoreFuture <- function(future, ...){
+
   FutureRegistry <- import_future("FutureRegistry")
   requestCore <- import_future("requestCore")
   session_uuid <- import_future("session_uuid")
 
-  function(future, ...){
-    reg <- sprintf("multicore-%s", session_uuid())
-    requestCore(await = function() {
-      futures <- FutureRegistry(reg, action = "list", earlySignal = FALSE)
-      fdebug("Running futures:", length(futures))
-      lapply(futures, listener_blocked, max_try = 3L)
-      # listener_blocked
-      FutureRegistry(reg, action = "collect-first", earlySignal = TRUE)
-    }, workers = future$workers)
-  }
-})
+  reg <- sprintf("multicore-%s", session_uuid())
+  fdebug("Requesting core...")
+  requestCore(await = function() {
+    futures <- FutureRegistry(reg, action = "list", earlySignal = FALSE)
+    fdebug("Running futures (multicore):", length(futures))
+    lapply(futures, listener_blocked, max_try = 3L)
+    # listener_blocked
+    FutureRegistry(reg, action = "collect-first", earlySignal = TRUE)
+  }, workers = future$workers)
+}
 
 
 
 #' @keywords internal
 #' @export
-run.FutureNowFuture <- local({
-  FutureRegistry <- import_future("FutureRegistry")
+run.FutureNowFuture <- function(future, ...) {
   assertOwner <- import_future("assertOwner")
-  session_uuid <- import_future("session_uuid")
-  requestCore <- import_future("requestCore")
-  clusterCall <- import_parallel('clusterCall')
-  grmall <- import_future('grmall')
-  packages <- import_future('packages')
-  hpaste <- import_future('hpaste')
-  requirePackages <- import_future('requirePackages')
-  globals <- import_future('globals')
+
+  if (future$state != "created") {
+    label <- future$label
+    if (is.null(label)) label <- "<none>"
+    msg <- sprintf("A future ('%s') can only be launched once.", label)
+    stop(FutureError(msg, future = future))
+  }
+
+  ## Assert that the process that created the future is
+  ## also the one that evaluates/resolves/queries it.
+  assertOwner(future)
 
 
-  function(future, ...) {
-    if (future$state != "created") {
-      label <- future$label
-      if (is.null(label)) label <- "<none>"
-      msg <- sprintf("A future ('%s') can only be launched once.", label)
-      stop(FutureError(msg, future = future))
-    }
+  res <- await(future)
+  fdebug("Requested: ", deparse(res, nlines = 1))
+  saveRDS(STATUS_SLAVE_RUNNING, future$extra$statusfile)
 
-    ## Assert that the process that created the future is
-    ## also the one that evaluates/resolves/queries it.
-    assertOwner(future)
+  NextMethod('run')
 
-    fdebug("Requesting core...")
-    res <- await(future)
-    fdebug("Requested: ", deparse(res, nlines = 1))
-    saveRDS(STATUS_SLAVE_RUNNING, future$extra$statusfile)
+  listener(future = future)
+  fdebug("Started listener")
 
-    listener(future = future)
-    fdebug("Started listener")
-
-    NextMethod('run')
-
-    invisible(future)
-  } ## run()
-})
+  invisible(future)
+}
