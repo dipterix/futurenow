@@ -196,15 +196,15 @@ listener <- local({
 
 
 inject_proxy <- function(expr, statusfile, datafile, resultfile){
-  rlang::quo_squash(rlang::quo({
+  print(expr)
+  injected <- bquote({
 
-    options('futurenow.debug' = !!getOption("futurenow.debug", FALSE))
-    options("futurenow.debug.file" = !!getOption("futurenow.debug.file", FALSE))
-    options("futurenow.debug.masteronly" = !!getOption("futurenow.debug.masteronly", FALSE))
-    options("futurenow.master.sessionid" = !!getOption("futurenow.master.sessionid", Sys.getpid()))
+    options('futurenow.debug' = .(getOption("futurenow.debug", FALSE)))
+    options("futurenow.debug.file" = .(getOption("futurenow.debug.file", FALSE)))
+    options("futurenow.debug.masteronly" = .(getOption("futurenow.debug.masteronly", FALSE)))
+    options("futurenow.master.sessionid" = .(getOption("futurenow.master.sessionid", Sys.getpid())))
 
     .futurenow <- asNamespace('futurenow')
-
     run_in_master <- function(expr, env = parent.frame(), substitute = TRUE, local_vars = FALSE){
       .futurenow$fdebug("Sending to master to run")
       force(env)
@@ -212,8 +212,8 @@ inject_proxy <- function(expr, statusfile, datafile, resultfile){
         expr <- substitute(expr)
       }
 
-      if(file.exists(!!resultfile)){
-        unlink(!!resultfile)
+      if(file.exists(.(resultfile))){
+        unlink(.(resultfile))
       }
 
       # check statusfile, if statusfile is not STATUS_SLAVE_RUNNING,
@@ -221,45 +221,45 @@ inject_proxy <- function(expr, statusfile, datafile, resultfile){
       tryCatch({
         gp <- .futurenow$find_globals(expr, env, globals = local_vars)
 
-        while(!{status <- readRDS(!!statusfile)} %in% c(!!STATUS_STOP, !!STATUS_SLAVE_RUNNING)){
+        while(!{status <- readRDS(.(statusfile))} %in% c(.(STATUS_STOP), .(STATUS_SLAVE_RUNNING))){
           .futurenow$fdebug("Waiting for status to clear... ", status)
           Sys.sleep(0.1)
         }
-        if(!isTRUE(status == !!STATUS_SLAVE_RUNNING)){
+        if(!isTRUE(status == .(STATUS_SLAVE_RUNNING))){
           stop("Future connection is broken")
         }
 
         # occupy the file
         .futurenow$fdebug("Writing instructions to file...")
-        saveRDS(!!STATUS_BUSY, !!statusfile)
-        saveRDS(gp, file = !!datafile)
+        saveRDS(.(STATUS_BUSY), .(statusfile))
+        saveRDS(gp, file = .(datafile))
 
         # let master node know it's ready
-        saveRDS(!!STATUS_MASTER_RUNNING, !!statusfile)
+        saveRDS(.(STATUS_MASTER_RUNNING), .(statusfile))
 
       }, error = function(e){
         .futurenow$fdebug("Error: ", e$message)
-        class(e) <- c(!!ERROR_SERIALIZATION, e)
+        class(e) <- c(.(ERROR_SERIALIZATION), e)
         stop(e)
       })
-      status <- readRDS(!!statusfile)
-      while(!status %in% c(!!STATUS_STOP, !!STATUS_MASTER_FINISHED)) {
+      status <- readRDS(.(statusfile))
+      while(!status %in% c(.(STATUS_STOP), .(STATUS_MASTER_FINISHED))) {
         .futurenow$fdebug("Waiting for master to finish the task...", status)
         Sys.sleep(0.2)
-        status <- readRDS(!!statusfile)
+        status <- readRDS(.(statusfile))
       }
 
-      if(status == !!STATUS_STOP){
+      if(status == .(STATUS_STOP)){
         # stop!
         .futurenow$fdebug("Broken...")
         stop("Future connection is broken")
       }
 
       # read results
-      if(file.exists(!!resultfile)){
+      if(file.exists(.(resultfile))){
         tryCatch({
           .futurenow$fdebug("Obtaining the results...")
-          res <- readRDS(!!resultfile)
+          res <- readRDS(.(resultfile))
           if(inherits(res, 'error')){
             .futurenow$fdebug("Getting Error from master: ", res$message)
             stop(res)
@@ -267,18 +267,25 @@ inject_proxy <- function(expr, statusfile, datafile, resultfile){
           list2env(res, env)
         }, finally = {
           .futurenow$fdebug("Release resources to others")
-          saveRDS(!!STATUS_SLAVE_RUNNING, !!statusfile)
+          saveRDS(.(STATUS_SLAVE_RUNNING), .(statusfile))
         })
       }
 
       return()
     }
+
     res <- tryCatch({
-      !!expr
+
+      future.call.arguments <- get0('future.call.arguments', ifnotfound = list())
+
+      do.call(function(...) {
+        .(expr)
+      }, args = future.call.arguments)
+
     }, finally = {
       .futurenow$fdebug("Finished.")
-      saveRDS(!!STATUS_STOP, !!statusfile)
+      saveRDS(.(STATUS_STOP), .(statusfile))
     })
-    return(res)
-  }))
+    res
+  })
 }
