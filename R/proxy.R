@@ -13,13 +13,17 @@ register_name <- function(name, .env = parent.frame()){
 }
 
 #' @export
-run_in_master <- function(expr, env = parent.frame(), substitute = TRUE){
+run_in_master <- function(expr, env = parent.frame(),
+                          substitute = TRUE, local_vars = FALSE){
   force(env)
   if(substitute) {
     expr <- substitute(expr)
   }
-  run_env <- new.env(parent = env)
-  eval(expr, run_env)
+  gp <- find_globals(expr, env, globals = local_vars)
+  mask_env <- new.env(parent = env)
+  list2env(gp$globals, mask_env)
+  run_env <- new.env(parent = mask_env)
+  eval(gp$expr, run_env)
   list2env(as.list(run_env), envir = env)
   invisible()
 }
@@ -214,7 +218,7 @@ inject_proxy <- function(expr, statusfile, datafile, resultfile){
 
     .futurenow <- asNamespace('futurenow')
 
-    run_in_master <- function(expr, env = parent.frame(), substitute = TRUE){
+    run_in_master <- function(expr, env = parent.frame(), substitute = TRUE, local_vars = FALSE){
       .futurenow$fdebug("Sending to master to run")
       force(env)
       if(substitute){
@@ -228,7 +232,7 @@ inject_proxy <- function(expr, statusfile, datafile, resultfile){
       # check statusfile, if statusfile is not STATUS_SLAVE_RUNNING,
       # it means other futures are using master node
       tryCatch({
-        gp <- .futurenow$find_globals(expr, env)
+        gp <- .futurenow$find_globals(expr, env, globals = local_vars)
 
         while(!{status <- readRDS(!!statusfile)} %in% c(!!STATUS_STOP, !!STATUS_SLAVE_RUNNING)){
           .futurenow$fdebug("Waiting for status to clear... ", status)

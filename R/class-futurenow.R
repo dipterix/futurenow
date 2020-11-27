@@ -1,3 +1,4 @@
+#' @export
 futurenow <- function(expr, envir = parent.frame(), substitute = TRUE,
                       listener.delay = 0.1, globals = TRUE, label = NULL,
                       type = c("MultisessionFuture", "MulticoreFuture"),
@@ -18,7 +19,7 @@ futurenow <- function(expr, envir = parent.frame(), substitute = TRUE,
 }
 class(futurenow) <- c("futurenow", "multiprocess", "future", "function")
 
-
+#' @export
 FutureNowFuture <- function(
   expr = NULL, envir = parent.frame(),
   type = c("MultisessionFuture", "MulticoreFuture"), substitute = TRUE,
