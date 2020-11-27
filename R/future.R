@@ -83,7 +83,7 @@
 #'
 #'
 #' @export
-futurenow <- function(expr, envir = parent.frame(), substitute = TRUE, lazy = FALSE,
+futurenow2 <- function(expr, envir = parent.frame(), substitute = TRUE, lazy = FALSE,
                       seed = FALSE, globals = TRUE, packages = NULL, label = NULL,
                       gc = FALSE, listener.delay = 0.1, ...) {
   if(substitute){
@@ -149,7 +149,7 @@ futurenow <- function(expr, envir = parent.frame(), substitute = TRUE, lazy = FA
 }
 
 #' @export
-resolve.futurenow <- function(x, idxs = NULL, recursive = 0, result = FALSE, stdout = FALSE,
+resolve.FutureNowFuture <- function(x, idxs = NULL, recursive = 0, result = FALSE, stdout = FALSE,
                               signal = FALSE, force = FALSE, sleep = 1, value = result,
                               ...) {
   if(x$state == 'created'){
@@ -160,7 +160,7 @@ resolve.futurenow <- function(x, idxs = NULL, recursive = 0, result = FALSE, std
 }
 
 #' @export
-value.futurenow <- function(future, ..., .skip = FALSE){
+value.FutureNowFuture <- function(future, ..., .skip = FALSE){
   if(!.skip){
     fdebug("Check future state: ", future$state)
     if(future$state == 'created'){

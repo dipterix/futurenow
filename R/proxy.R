@@ -59,7 +59,7 @@ eval_from_proxy <- function(statusfile, datafile, resultfile, env){
   })
 }
 
-listener_blocked <- function(future){
+listener_blocked <- function(future, max_try = Inf){
 
   fdebug("Listener-blocking")
 
@@ -73,10 +73,10 @@ listener_blocked <- function(future){
   if(!file.exists(statusfile)) { return() }
 
   force_stop <- FALSE
-
+  max_try_left <- max_try
 
   tryCatch({
-    while(!force_stop){
+    while(!force_stop && max_try_left > 0){
       status_code <- as.character(readRDS(statusfile))
       if(length(status_code) != 1){ return() }
 
@@ -97,6 +97,7 @@ listener_blocked <- function(future){
           }
         }
       )
+      max_try_left = max_try_left - 1
       Sys.sleep(delay)
     }
 
@@ -105,39 +106,35 @@ listener_blocked <- function(future){
     class(e) <- c(ERROR_LISTENER, class(e))
     saveRDS(e, file = resultfile)
     saveRDS(STATUS_STOP, statusfile)
+    force_stop <<- TRUE
   })
 
-
+  return(force_stop)
 
 }
 
-
-listener <- local({
+check_single <- local({
   last_flag <- '-1'
   function(future){
-
-    if(!file.exists(future$extra$statusfile) || !future$extra$listener_enabled) { return() }
-
-    tryCatch({
+    if(!file.exists(future$extra$statusfile) || !future$extra$listener_enabled) { return(FALSE) }
+    reschedule <- tryCatch({
       status_code <- as.character(readRDS(future$extra$statusfile))
-      if(length(status_code) != 1){ return() }
-
+      if(length(status_code) != 1){ return(FALSE) }
       switch (
         as.character(status_code),
         '0' = { # STATUS_STOP
-          if(!isTRUE(last_flag == status_code)){
-            fdebug("Non-blockListener captured FINISH code. (0)")
-            last_flag <<- status_code
-          }
-
+          # if(!isTRUE(last_flag == status_code)){
+          #   fdebug("Non-blockListener captured FINISH code. (0)")
+          #   last_flag <<- status_code
+          # }
           future$extra$listener_enabled <- FALSE
-          return()
+          return(FALSE)
         },
         '2' = { # STATUS_MASTER_RUNNING
-          if(!isTRUE(last_flag == status_code)){
-            fdebug("Non-blockListener captured MASTER code. Evaluating expressions in master node (2)")
-            last_flag <<- status_code
-          }
+          # if(!isTRUE(last_flag == status_code)){
+          #   fdebug("Non-blockListener captured MASTER code. Evaluating expressions in master node (2)")
+          #   last_flag <<- status_code
+          # }
 
           eval_from_proxy(future$extra$statusfile, future$extra$datafile, future$extra$resultfile, future$extra$env)
         }, {
@@ -145,26 +142,60 @@ listener <- local({
           # STATUS_MASTER_FINISHED: slave nodes need to run
           # STATUS_BUSY: writing data in progress
           # other code are unknown. reserved for future use
-          if(!isTRUE(last_flag == status_code)){
-            fdebug(sprintf("Non-blockListener wait... (%s)", status_code))
-            last_flag <<- status_code
-          }
+          # if(!isTRUE(last_flag == status_code)){
+          #   fdebug(sprintf("Non-blockListener wait... (%s)", status_code))
+          #   last_flag <<- status_code
+          # }
         }
       )
 
-      # Re-schedule
-      evallater(function(){
-        listener(future)
-      }, delay = future$extra$listener_delay)
+      TRUE
 
     }, error = function(e){
       fdebug("Error: ", e$message)
       class(e) <- c(ERROR_LISTENER, class(e))
       saveRDS(e, file = future$extra$resultfile)
       saveRDS(STATUS_MASTER_FINISHED, future$extra$statusfile)
+      FALSE
     })
 
   }
+})
+
+listener <- local({
+
+  queue <- list()
+  delay <- 0.1
+
+  function(future){
+    if(!missing(future)){
+      queue[[length(queue) + 1]] <<- future
+      delay <<- future$extra$listener_delay
+    }
+
+    if(!length(queue)){ return() }
+
+    fdebug("Checking master tasks")
+    reschedule <- sapply(queue, check_single)
+
+
+    if(length(reschedule)){
+      fdebug("Total active cases: (", sum(reschedule), "), finished tasks (", sum(!reschedule), ")", sep = '')
+      if(any(!reschedule)) {
+        queue <<- queue[reschedule]
+      }
+
+      if(any(reschedule)) {
+        # Re-schedule
+        fdebug("Reschedule checks...")
+        evallater(function(){ listener() }, delay = delay)
+        return()
+      }
+    }
+    fdebug("All tasks finished.")
+  }
+
+
 })
 
 
