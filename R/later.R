@@ -14,7 +14,6 @@ shiny_futurenow_init <- function(session, delay = 0.1){
     session$userData$...futurenow_timer <- timer
     shiny::observeEvent(timer(), {
       f <- session$userData$...futurenow_func
-      session$userData$...futurenow_func <- NULL
       if(is.function(f)){
         f()
       }
@@ -35,7 +34,7 @@ evallater <- local({
       # need to run later
       session <- shiny::getDefaultReactiveDomain()
       if(!is.function(session$userData$...futurenow_timer)){
-        shiny_futurenow_init(session, delay)
+        shiny_futurenow_init(session, getOption("futurenow.shiny.delay", 0.5))
       }
       session$userData$...futurenow_func <- fun
     } else {
