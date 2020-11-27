@@ -30,7 +30,7 @@ fdebug <- function(..., end = '\n', out = getOption('futurenow.debug.file', stdo
 }
 
 #' @export
-debug_futurenow <- function(tmpfile = file.path(tempdir(), 'futurenow.debug.log'),
+debug_futurenow <- function(tmpfile = '.debug.log',
                             reset = FALSE, master_only = FALSE){
 
   log <- getOption("futurenow.debug.file", tmpfile)

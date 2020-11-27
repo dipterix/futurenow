@@ -171,8 +171,12 @@ listener <- local({
     if(!missing(future)){
       queue[[length(queue) + 1]] <<- future
       delay <<- future$extra$listener_delay
-    }
 
+      if(length(queue) >= 2L) {
+        return()
+      }
+
+    }
     if(!length(queue)){ return() }
 
     fdebug("Checking master tasks")
