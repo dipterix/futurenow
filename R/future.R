@@ -175,7 +175,7 @@ value.FutureNowFuture <- function(future, ..., .skip = FALSE){
 
   res <- NextMethod()
 
-  if(!.skip){
+  if(!.skip && dir.exists(future$extra$rootdir)){
     fdebug("Removing temporary files...")
     unlink(future$extra$rootdir, recursive = TRUE, force = TRUE)
   }

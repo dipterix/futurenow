@@ -67,16 +67,7 @@ FutureNowFuture <- function(
 
 
 as_FutureNowFuture <- function(future, workers = NULL, ...) {
-  sp <- switch (
-    future$extra$actual_type,
-    'MultisessionFuture' = import_future('as_ClusterFuture'),
-    'MulticoreFuture' = import_future('as_MulticoreFuture')
-  )
-  print(class(future))
-  future <- sp(future, workers = workers)
-  print(class(future))
   future <- structure(future, class = c("FutureNowFuture", class(future)))
-  print(class(future))
   future
 }
 
@@ -120,13 +111,25 @@ result.FutureNowFuture <- function(future, ...) {
     if (inherits(result, "FutureError")) stop(result)
     return(result)
   }
-
+  fdebug("Check future state: ", future$state)
   if (future$state == "created") {
     future <- run(future)
   }
 
-  # TODO: make sure it's finished?
-  NextMethod()
+  if(future$state == "running"){
+    listener_blocked(future = future)
+  }
+
+  fdebug("Getting results")
+
+  res <- NextMethod()
+
+  fdebug("Removing temporary files...")
+  if(dir.exists(future$extra$rootdir)){
+    unlink(future$extra$rootdir, recursive = TRUE, force = TRUE)
+  }
+
+  res
 }
 
 
@@ -183,67 +186,6 @@ run.FutureNowFuture <- local({
   requirePackages <- import_future('requirePackages')
   globals <- import_future('globals')
 
-  # run.ClusterFuture <- function (future, ...) {
-  #   debug <- getOption("future.debug", FALSE)
-  #   sendCall <- import_parallel("sendCall")
-  #   workers <- future$workers
-  #   expr <- getExpression(future)
-  #   persistent <- future$persistent
-  #   reg <- sprintf("workers-%s", attr(workers, "name", exact = TRUE))
-  #   node_idx <- await(future)
-  #   future$node <- node_idx
-  #   cl <- workers[node_idx]
-  #   if (!persistent) {
-  #     clusterCall(cl, fun = grmall)
-  #   }
-  #   packages <- packages(future)
-  #   if (future$earlySignal && length(packages) > 0) {
-  #     if (debug)
-  #       mdebugf("Attaching %d packages (%s) on cluster node #%d ...",
-  #               length(packages), hpaste(sQuote(packages)), node_idx)
-  #     clusterCall(cl, fun = requirePackages, packages)
-  #     if (debug)
-  #       mdebugf("Attaching %d packages (%s) on cluster node #%d ... DONE",
-  #               length(packages), hpaste(sQuote(packages)), node_idx)
-  #   }
-  #   globals <- globals(future)
-  #   if (length(globals) > 0) {
-  #     if (debug) {
-  #       total_size <- asIEC(objectSize(globals))
-  #       mdebugf("Exporting %d global objects (%s) to cluster node #%d ...",
-  #               length(globals), total_size, node_idx)
-  #     }
-  #     for (name in names(globals)) {
-  #       value <- globals[[name]]
-  #       if (debug) {
-  #         size <- asIEC(objectSize(value))
-  #         mdebugf("Exporting %s (%s) to cluster node #%d ...",
-  #                 sQuote(name), size, node_idx)
-  #       }
-  #       suppressWarnings({
-  #         clusterCall(cl, fun = gassign, name, value)
-  #       })
-  #       if (debug)
-  #         mdebugf("Exporting %s (%s) to cluster node #%d ... DONE",
-  #                 sQuote(name), size, node_idx)
-  #       value <- NULL
-  #     }
-  #     if (debug)
-  #       mdebugf("Exporting %d global objects (%s) to cluster node #%d ... DONE",
-  #               length(globals), total_size, node_idx)
-  #   }
-  #   globals <- NULL
-  #   FutureRegistry(reg, action = "add", future = future, earlySignal = FALSE)
-  #   sendCall(cl[[1L]], fun = geval, args = list(expr))
-  #   future$state <- "running"
-  #   if (debug)
-  #     mdebugf("%s started", class(future)[1])
-  #   invisible(future)
-  # }
-
-
-
-
 
   function(future, ...) {
     if (future$state != "created") {
@@ -257,7 +199,6 @@ run.FutureNowFuture <- local({
     ## also the one that evaluates/resolves/queries it.
     assertOwner(future)
 
-    workers <- future$workers
     fdebug("Requesting core...")
     res <- await(future)
     fdebug("Requested: ", deparse(res, nlines = 1))
