@@ -183,6 +183,11 @@ futurenow <- function(expr, envir = parent.frame(), substitute = TRUE,
                       type = c("MultisessionFuture", "MulticoreFuture"),
                       workers = availableCores(), ...) {
   type <- match.arg(type)
+
+  if(type == "MulticoreFuture"){
+    options(future.fork.enable = TRUE)
+  }
+
   if (substitute) expr <- substitute(expr)
 
   if (is.null(workers)) workers <- availableCores()
