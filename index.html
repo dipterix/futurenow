@@ -92,6 +92,7 @@
 <a href="#introduction" class="anchor"></a>Introduction</h2>
 <p>The R package <a href="https://github.com/HenrikBengtsson/future"><strong>future</strong></a> provides a unified framework for parallel and distributed processing in R using <code>futures''. A</code>future’’ is usually a separated process that runs R command without blocking its master session, which is often the R session users are operating on.</p>
 <p>One of the issues with asynchronously evaluating R expressions in another process is data transfer. If the data is an external pointer, this procedure is hard unless using forked process. If the data is too large, transferring the large data around is both time consuming (serialization and needs extra time) and memory consuming. Then the user might want to run the following data pipeline:</p>
+<p><img src="https://github.com/dipterix/futurenow/raw/main/inst/diagram.png" alt="Diagram: futurenow runs pipeline B in the main session"></p>
 <p>Process A runs asynchronously, which might take a while. Process B requires the results from A and has to run in the main session. The results of B is sent back to the future session to continue C. Only process B blocks the main session.</p>
 </div>
 <div id="example" class="section level2">
