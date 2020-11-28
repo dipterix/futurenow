@@ -106,6 +106,14 @@ eval_from_proxy <- function(statusfile, datafile, resultfile, env){
     saveRDS(STATUS_BUSY, statusfile)
     gp <- readRDS(datafile)
 
+    # Used to fix issue when futurenow_lapply is running
+    if(getOption("futurenow.lapply.running", FALSE)){
+      env1 <- getOption("futurenow.lapply.environment", stop("futurenow_lapply environment not set?"))
+      if(!is.environment(env1)){
+        stop("futurenow_lapply environment is invalid")
+      }
+      env <- env1
+    }
     mask_env <- new.env(parent = env)
 
     # expr and data

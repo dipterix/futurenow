@@ -14,7 +14,6 @@ server <- function(input, output, session) {
 
   observeEvent(input$ok, {
     p <- Progress$new(session = session, min = 0, max = 10)
-    assign('p', p, envir = globalenv())
     plan(futurenow)
 
     on.exit({
@@ -22,7 +21,7 @@ server <- function(input, output, session) {
       plan(sequential)
     }, add = TRUE)
 
-    future.apply::future_lapply(1:10, function(i){
+    futurenow_lapply(1:10, function(i){
       # Run something async
 
       # Run in master session
@@ -31,7 +30,7 @@ server <- function(input, output, session) {
                          detail = sprintf('Processing %d', i))
       }, local_vars = 'i')
 
-      # Run something again
+      # Run something async again
     })
 
   })
