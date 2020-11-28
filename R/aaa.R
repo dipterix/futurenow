@@ -18,10 +18,10 @@ fdebug <- function(..., end = '\n', out = getOption('futurenow.debug.file', stdo
     is_master <- getOption("futurenow.master.sessionid", Sys.getpid()) == Sys.getpid()
     if(!getOption("futurenow.debug.masteronly", FALSE) || is_master){
       if(is_master){
-        col <- '\x1b[31m'
+        col <- '\r\x1b[31m'
         fmt <- sprintf("[%s][master]", Sys.getpid())
       } else {
-        col <- '\x1b[36m'
+        col <- '\r\x1b[36m'
         fmt <- sprintf("    [%s][slave ]", Sys.getpid())
       }
       if(is.character(out)){

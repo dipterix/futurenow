@@ -37,7 +37,7 @@ listener_blocked <- function(future, max_try = Inf){
         }
       )
       max_try_left <- max_try_left - 1
-      if(max_try_left > 0){
+      if(!force_stop && max_try_left > 0){
         Sys.sleep(delay)
       }
     }
@@ -97,12 +97,15 @@ listener <- local({
 
   function(future){
     fdebug("[Queue] size:", length(queue))
+
+    no_reschedule <- FALSE
+
     if(!missing(future)){
       queue[[length(queue) + 1]] <<- future
       delay <<- future$extra$listener_delay
 
       if(length(queue) >= 2L) {
-        return()
+        no_reschedule <- TRUE
       }
 
     }
@@ -118,7 +121,7 @@ listener <- local({
         queue <<- queue[reschedule]
       }
 
-      if(any(reschedule)) {
+      if(!no_reschedule && any(reschedule)) {
         # Re-schedule
         fdebug("Reschedule checks...")
         evallater(function(){ listener() }, delay = delay)

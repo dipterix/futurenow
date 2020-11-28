@@ -117,6 +117,38 @@ the instructions; see examples.
 
 The other parts are exactly the same as other future objects.
 }
+\section{An Issue with \code{MulticoreFuture}}{
+
+
+The strategy \code{futurenow} has two internal types:
+\code{MultisessionFuture} and \code{MulticoreFuture}.
+\code{MultisessionFuture} spawns a \code{\link[future]{multisession}}
+process and \code{MulticoreFuture} spawns a forked
+\code{\link[future]{multicore}} process. While multisession works in
+any situation, multicore is faster since it uses a "fork" process that
+has shared memory and does not need serialization.
+However, there are some limits using \code{MulticoreFuture}. For example,
+it's only supported on 'Mac' and 'Linux' system; if used improperly
+in 'RStudio', a fork bomb could be malicious to the system (see also
+\url{https://en.wikipedia.org/wiki/Fork_bomb}).
+
+When choosing \code{MultisessionFuture} type, a listener will run in the
+background monitoring requests from the future sessions. However when
+running with \code{MulticoreFuture}, the listener could cause a fork bomb.
+Therefore, the listener will stop running in the background and some
+future processes may pause at stage \code{B} (see details, the procedure
+that requires interaction with the main session) if \code{run_in_master} is
+called. In such case, the future instance might never be resolved if the
+listener is not triggered.
+
+To trigger the listener manually, one only needs to "try to collect" the
+results, for instance, \code{value(x)}, \code{resolve(x)}, or
+\code{result(x)} will trigger the listener and collect the results.
+\code{resolved(x)} will also trigger the listener, but it does not block
+the main session. When trying to spawn new future instances, the listener
+will also trigger automatically.
+}
+
 \examples{
 
 

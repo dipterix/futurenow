@@ -46,6 +46,11 @@ value.FutureNowFuture <- function(future, ..., .skip = FALSE){
     }
     if(future$state == "running"){
       listener_blocked(future = future)
+
+      if(!.skip && dir.exists(future$extra$rootdir)){
+        fdebug("Removing temporary files...")
+        unlink(future$extra$rootdir, recursive = TRUE, force = TRUE)
+      }
     }
 
     fdebug("Getting results")
