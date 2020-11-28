@@ -28,7 +28,7 @@ The R package [**future**](https://github.com/HenrikBengtsson/future) provides a
 
 One of the issues with asynchronously evaluating R expressions in another process is data transfer. If the data is an external pointer, this procedure is hard unless using forked process. If the data is too large, transferring the large data around is both time consuming (serialization and needs extra time) and memory consuming. Then the user might want to run the following data pipeline:
 
-
+![Diagram: `futurenow` runs pipeline B in the main session](https://github.com/dipterix/futurenow/raw/main/inst/diagram.png)
 
 Process A runs asynchronously, which might take a while. Process B requires the results from A and has to run in the main session. The results of B is sent back to the future session to continue C. Only process B blocks the main session.
 
