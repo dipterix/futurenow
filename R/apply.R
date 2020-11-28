@@ -14,7 +14,7 @@
 #' load
 #' @param future.lazy Whether to start evaluation immediately
 #' @param future.seed A logical or an integer (of length one or seven), or a
-#' list of \code{length(X)} with pre-generated random seeds; see
+#' list of \code{length(X)} with prespecified random seeds; see
 #' \code{\link[future.apply]{future_eapply}}
 #' @param future.scheduling,future.chunk.size See
 #' \code{\link[future.apply]{future_eapply}}

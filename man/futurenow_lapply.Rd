@@ -39,7 +39,7 @@ load}
 \item{future.lazy}{Whether to start evaluation immediately}
 
 \item{future.seed}{A logical or an integer (of length one or seven), or a
-list of \code{length(X)} with pre-generated random seeds; see
+list of \code{length(X)} with prespecified random seeds; see
 \code{\link[future.apply]{future_eapply}}}
 
 \item{future.scheduling, future.chunk.size}{See

@@ -1,29 +1,29 @@
-has_shiny <- function(){
-  if(system.file('', package = 'shiny') != '' &&
-     'shiny' %in% loadedNamespaces() &&
-     requireNamespace('shiny', quietly = TRUE)){
-    return(isTRUE(!is.null(shiny::getDefaultReactiveDomain())))
-  }
-  return(FALSE)
-}
-
-shiny_futurenow_init <- function(session, delay = 0.1){
-
-  if(!is.function(session$userData$...futurenow_timer)){
-    timer <- shiny::reactiveTimer(delay * 1000, session = session)
-    session$userData$...futurenow_timer <- timer
-    shiny::observeEvent(timer(), {
-      f <- session$userData$...futurenow_func
-      if(is.function(f)){
-        try({
-          f()
-        }, silent = TRUE)
-      }
-    })
-  }
-
-
-}
+# has_shiny <- function(){
+#   if(system.file('', package = 'shiny') != '' &&
+#      'shiny' %in% loadedNamespaces() &&
+#      requireNamespace('shiny', quietly = TRUE)){
+#     return(isTRUE(!is.null(shiny::getDefaultReactiveDomain())))
+#   }
+#   return(FALSE)
+# }
+#
+# shiny_futurenow_init <- function(session, delay = 0.1){
+#
+#   if(!is.function(session$userData$...futurenow_timer)){
+#     timer <- shiny::reactiveTimer(delay * 1000, session = session)
+#     session$userData$...futurenow_timer <- timer
+#     shiny::observeEvent(timer(), {
+#       f <- session$userData$...futurenow_func
+#       if(is.function(f)){
+#         try({
+#           f()
+#         }, silent = TRUE)
+#       }
+#     })
+#   }
+#
+#
+# }
 
 evallater <- local({
 
