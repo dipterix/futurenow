@@ -229,7 +229,7 @@ all variables should be in the main session</p></td>
 schedules future process. This usually happens in the main process where
 the users interact with. The ``slave sessions'' or the ``future sessions''
 are the R processes that asynchronous codes are evaluated.</p>
-<p>One of an issue with asynchronously evaluating R expressions in another
+<p>One of the issues with asynchronously evaluating R expressions in another
 process is data transfer. If the data is an external pointer, this procedure
 is hard unless using forked process. If the data is too large, transferring
 the large data around is both time consuming (serialization and needs extra
@@ -253,6 +253,36 @@ future sessions as-is.</p>
 users can also choose which variables in the future sessions along with
 the instructions; see examples.</p>
 <p>The other parts are exactly the same as other future objects.</p>
+    <h2 class="hasAnchor" id="an-issue-with-multicorefuture"><a class="anchor" href="#an-issue-with-multicorefuture"></a>An Issue with <code>MulticoreFuture</code></h2>
+
+    
+
+
+<p>The strategy <code>futurenow</code> has two internal types:
+<code>MultisessionFuture</code> and <code>MulticoreFuture</code>.
+<code>MultisessionFuture</code> spawns a <code><a href='https://rdrr.io/pkg/future/man/multisession.html'>multisession</a></code>
+process and <code>MulticoreFuture</code> spawns a forked
+<code><a href='https://rdrr.io/pkg/future/man/multicore.html'>multicore</a></code> process. While multisession works in
+any situation, multicore is faster since it uses a "fork" process that
+has shared memory and does not need serialization.
+However, there are some limits using <code>MulticoreFuture</code>. For example,
+it's only supported on 'Mac' and 'Linux' system; if used improperly
+in 'RStudio', a fork bomb could be malicious to the system (see also
+<a href='https://en.wikipedia.org/wiki/Fork_bomb'>https://en.wikipedia.org/wiki/Fork_bomb</a>).</p>
+<p>When choosing <code>MultisessionFuture</code> type, a listener will run in the
+background monitoring requests from the future sessions. However when
+running with <code>MulticoreFuture</code>, the listener could cause a fork bomb.
+Therefore, the listener will stop running in the background and some
+future processes may pause at stage <code>B</code> (see details, the procedure
+that requires interaction with the main session) if <code>run_in_master</code> is
+called. In such case, the future instance might never be resolved if the
+listener is not triggered.</p>
+<p>To trigger the listener manually, one only needs to "try to collect" the
+results, for instance, <code><a href='https://rdrr.io/pkg/future/man/value.html'>value(x)</a></code>, <code><a href='https://rdrr.io/pkg/future/man/resolve.html'>resolve(x)</a></code>, or
+<code><a href='https://rdrr.io/pkg/future/man/result.html'>result(x)</a></code> will trigger the listener and collect the results.
+<code><a href='https://rdrr.io/pkg/future/man/resolved.html'>resolved(x)</a></code> will also trigger the listener, but it does not block
+the main session. When trying to spawn new future instances, the listener
+will also trigger automatically.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p><code><a href='https://rdrr.io/pkg/future/man/future.html'>future</a></code>, <code><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></code></p></div>
