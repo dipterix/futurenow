@@ -58,7 +58,15 @@ FutureNowFuture <- function(
   future$extra$rootdir <- tmpfile
   future$extra$listener_enabled <- TRUE
   future$extra$listener_delay <- listener.delay
-  future$extra$env <- envir
+  if(getOption("futurenow.lapply.running", FALSE)){
+    env1 <- getOption("futurenow.lapply.environment", stop("futurenow_lapply environment not set?"))
+    if(!is.environment(env1)){
+      stop("futurenow_lapply environment is invalid")
+    }
+    future$extra$env <- env1
+  } else {
+    future$extra$env <- envir
+  }
   future$extra$actual_type <- type
 
   future <- as_FutureNowFuture(future, workers = workers)
