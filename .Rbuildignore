@@ -1,3 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.debug\.log$
+^\.github$
+^\.travis\.yml$

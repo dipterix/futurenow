@@ -17,4 +17,6 @@ Imports:
     later (>= 1.1.0.1),
     future.apply (>= 1.6.0)
 Suggests:
-    shiny
+    shiny,
+    spelling
+Language: en-US
