@@ -1,4 +1,5 @@
 
+#' @rdname futurenow
 #' @export
 register_name <- function(name, .env = parent.frame()){
   eval_env <- parent.frame()
@@ -12,6 +13,7 @@ register_name <- function(name, .env = parent.frame()){
   invisible()
 }
 
+#' @rdname futurenow
 #' @export
 run_in_master <- function(expr, env = parent.frame(), substitute = TRUE, local_vars = FALSE){
   fdebug("Sending to master to run")

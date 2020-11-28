@@ -1,3 +1,182 @@
+#' Create future that can resolve asynchronously in a parallel R session
+#' but can talk with the master session
+#' @description A multisession or multicore future that uses other R process
+#' to evaluate, but allows to run code in the master session during the
+#' evaluation.
+#' @param expr R expression
+#' @param envir Environment the future should be evaluated
+#' @param listener.delay Time interval in second the master main session should
+#' wait to handle connections from the future instances; default is 0.1
+#' @param type The actual type of future to run, choices are
+#' \code{"MultisessionFuture"} and \code{"MulticoreFuture"}; default is
+#' \code{"MultisessionFuture"}
+#' @param workers Max number of parallel instances to run at the same time
+#' @param substitute Should \code{expr} be quoted? Default is \code{TRUE}
+#' @param packages Packages for future instances to load
+#' @param env Where to \code{local_vars} to search variables from
+#' @param local_vars Local variable names in the future object to send along
+#' to the master session for evaluation; default is \code{FALSE}, meaning
+#' all variables should be in the main session
+#' @param name R symbol to register to the future processes
+#' @param .env Internally used
+#' @param globals,label,... Passed to \code{\link[future]{future}}
+#'
+#' @return The function \code{futurenow} and \code{FutureNowFuture} return
+#' \code{\link[future]{future}} instances with class 'FutureNowFuture'. Function
+#' \code{run_in_master} and \code{register_name} return nothing.
+#'
+#' @seealso \code{\link[future]{future}}, \code{\link[future]{plan}}
+#'
+#' @details In this package, ``master session'' means the R session which
+#' schedules future process. This usually happens in the main process where
+#' the users interact with. The ``slave sessions'' or the ``future sessions''
+#' are the R processes that asynchronous codes are evaluated.
+#'
+#' One of an issue with asynchronously evaluating R expressions in another
+#' process is data transfer. If the data is an external pointer, this procedure
+#' is hard unless using forked process. If the data is too large, transferring
+#' the large data around is both time consuming (serialization and needs extra
+#' time) and memory consuming. Suppose a user wants to run a data pipeline
+#' \code{A}, \code{B}, and \code{C}, where only \code{B} requires handling the
+#' data. One can choose to run \code{A} asynchronously, then \code{B} in the
+#' main session, then \code{C} again asynchronously.
+#'
+#' Normally \code{\link[future]{future}} instance only allows
+#' instructions from the master process to the slave nodes. The reversed
+#' communication is missing or limited. This prevents the above procedure
+#' to run within one future session.
+#'
+#' Motivated by this objective, \code{futurenow} is created. In
+#' \code{futurenow}, the above procedure is possible with
+#' \code{run_in_master} and \code{register_name}.
+#'
+#' During the asynchronous evaluation, the function \code{run_in_master} sends
+#' the expression inside to the master session to evaluate. Once finished,
+#' variables are sent back to the future sessions via \code{register_name}.
+#' The variables sent back via \code{register_name} can then be used in
+#' future sessions as-is.
+#'
+#' When \code{run_in_master} asks the master session to evaluate code, the
+#' users can also choose which variables in the future sessions along with
+#' the instructions; see examples.
+#'
+#' The other parts are exactly the same as other future objects.
+#'
+#' @examples
+#'
+#'
+#' if(interactive()){
+#'
+#'   library(future)
+#'   library(futurenow)
+#'
+#'   plan(futurenow, workers = 2)
+#'
+#'   # ------------------ Basic example ------------------
+#'   plan(futurenow, workers = 2)
+#'   f <- future({
+#'
+#'     # Procedure A
+#'     future_pid <- Sys.getpid()
+#'
+#'     run_in_master({
+#'       # Procedure B
+#'       master_pid <- Sys.getpid()
+#'       register_name(master_pid)
+#'     })
+#'
+#'     # Procedure C
+#'     sprintf("Master process PID is %s, future process PID is %s",
+#'             master_pid, future_pid)
+#'   })
+#'
+#'   value(f)
+#'
+#'   # ------------------ Choose variables examples ------------------
+#'   plan(futurenow, workers = 2)
+#'
+#'   a <- 1
+#'   f <- future({
+#'     a <- 10
+#'     run_in_master({
+#'       b <- a + 1
+#'       register_name(b)
+#'     })
+#'     b
+#'   })
+#'   value(f)   # a + 1 (a in master session)
+#'
+#'   f <- future({
+#'     a <- 10
+#'     run_in_master({
+#'       b <- a + 1
+#'       register_name(b)
+#'
+#'       # local_vars sends variables along with the instruction
+#'     }, local_vars = 'a')
+#'     b
+#'   })
+#'   value(f)   # a + 1 (a in future session)
+#'
+#'   # ------------------ A practical example ------------------
+#'   # Create a "large" dataset that will fail the future
+#'   x <- rnorm(1e6)
+#'   options(future.globals.maxSize = 1024^2)
+#'
+#'   plan(futurenow, workers = 2)
+#'
+#'   # This will **fail** because x exceed `future.globals.maxSize`
+#'   future({
+#'     pid <- Sys.getpid()
+#'     result <- pid + mean(x)
+#'     result
+#'   })
+#'
+#'   # x is never transferred to future sessions
+#'   fnow <- future({
+#'     pid <- Sys.getpid()
+#'
+#'     run_in_master({
+#'       # This code will run in master
+#'       mean_x <- mean(x)
+#'
+#'       # register results back to future
+#'       register_name(mean_x)
+#'     })
+#'
+#'     mean_x + pid
+#'
+#'   })
+#'   value(fnow)
+#'
+#'   # ------------------ Progressbar in Shiny app ------------------
+#'   library(shiny)
+#'   plan(futurenow, workers = 2)
+#'
+#'   ui <- fluidPage(
+#'     actionButton("ok", "Run")
+#'   )
+#'
+#'   server <- function(input, output, session) {
+#'     observeEvent(input$ok, {
+#'       p <- Progress$new(session = session, min = 0, max = 10)
+#'
+#'       futurenow_lapply(1:10, function(i){
+#'         Sys.sleep(0.3)
+#'         # inc progress bar
+#'         futurenow::run_in_master({
+#'           p$inc(amount = 1, message = 'Running item', detail = i)
+#'         }, local_vars = 'i')
+#'       })
+#'
+#'       p$close()
+#'     })
+#'   }
+#'
+#'   shinyApp(ui, server)
+#'
+#' }
+#'
 #' @export
 futurenow <- function(expr, envir = parent.frame(), substitute = TRUE,
                       listener.delay = 0.1, globals = TRUE, label = NULL,
@@ -19,11 +198,12 @@ futurenow <- function(expr, envir = parent.frame(), substitute = TRUE,
 }
 class(futurenow) <- c("futurenow", "multiprocess", "future", "function")
 
+#' @rdname futurenow
 #' @export
 FutureNowFuture <- function(
   expr = NULL, envir = parent.frame(),
   type = c("MultisessionFuture", "MulticoreFuture"), substitute = TRUE,
-  globals = TRUE, packages = NULL, label = NULL, workers = NULL,
+  globals = TRUE, packages = NULL, workers = NULL,
   listener.delay = 0.1, ...) {
   type <- match.arg(type)
   if (substitute) expr <- substitute(expr)
@@ -42,12 +222,13 @@ FutureNowFuture <- function(
   resultfile <- file.path(tmpfile, 'results')
 
   fdebug("Inject scripts into future")
-  expr <- inject_proxy(expr = gp$expr, statusfile = statusfile,datafile = datafile,resultfile = resultfile)
+  expr <- inject_proxy(expr = gp$expr, statusfile = statusfile,
+                       datafile = datafile,resultfile = resultfile)
 
   future <- import_future(type)(
     expr = expr, envir = envir, substitute = FALSE, globals = fake_gp$globals,
     packages = unique(c(packages, 'futurenow', fake_gp$packages, gp$packages)),
-    label = label, workers = workers, ...)
+    workers = workers, ...)
 
   if(!is.list(future$extra)){
     future$extra <- list()
@@ -80,71 +261,6 @@ as_FutureNowFuture <- function(future, workers = NULL, ...) {
   future
 }
 
-
-
-#' @export
-getExpression.FutureNowFuture <- function(future, mc.cores = 1L, ...) {
-  NextMethod(mc.cores = mc.cores)
-}
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Future API
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#' @keywords internal
-#' @export
-resolved.FutureNowFuture <- function(x, ...) {
-  # check status file
-  if(!isTRUE(file.exists(x$extra$statusfile))){
-    return(TRUE)
-  }
-
-  is_stopped <- tryCatch({
-    isTRUE(readRDS(x$extra$statusfile) == STATUS_STOP)
-  }, error = function(e){
-    TRUE
-  })
-
-  if(is_stopped){
-    return(TRUE)
-  }
-
-  # Still running, but let's block it for a second to see if there's any
-  # tasks blocking the session
-  listener_blocked(x, max_try = 1L)
-
-  NextMethod()
-}
-
-
-#' @keywords internal
-#' @export
-result.FutureNowFuture <- function(future, ...) {
-  fdebug("[result.FutureNowFuture] called")
-  result <- future$result
-  if (!is.null(result)) {
-    if (inherits(result, "FutureError")) stop(result)
-    return(result)
-  }
-  fdebug("Check future state: ", future$state)
-  if (future$state == "created") {
-    future <- run(future)
-  }
-
-  if(future$state == "running"){
-    listener_blocked(future = future)
-  }
-
-  fdebug("Getting results")
-
-  res <- NextMethod()
-
-  fdebug("Removing temporary files...")
-  if(dir.exists(future$extra$rootdir)){
-    unlink(future$extra$rootdir, recursive = TRUE, force = TRUE)
-  }
-
-  res
-}
 
 
 await <- function(...) UseMethod("await")
@@ -186,7 +302,6 @@ await.MulticoreFuture <- function(future, ...){
 
 
 
-#' @keywords internal
 #' @export
 run.FutureNowFuture <- function(future, ...) {
   assertOwner <- import_future("assertOwner")
