@@ -15,7 +15,9 @@ shiny_futurenow_init <- function(session, delay = 0.1){
     shiny::observeEvent(timer(), {
       f <- session$userData$...futurenow_func
       if(is.function(f)){
-        f()
+        try({
+          f()
+        }, silent = TRUE)
       }
     })
   }
@@ -29,15 +31,15 @@ evallater <- local({
 
   function(fun, delay){
 
-    # check whether this is in shiny
-    if(has_shiny()){
-      # need to run later
-      session <- shiny::getDefaultReactiveDomain()
-      if(!is.function(session$userData$...futurenow_timer)){
-        shiny_futurenow_init(session, getOption("futurenow.shiny.delay", 0.5))
-      }
-      session$userData$...futurenow_func <- fun
-    } else {
+    # # check whether this is in shiny
+    # if(has_shiny()){
+    #   # need to run later
+    #   session <- shiny::getDefaultReactiveDomain()
+    #   if(!is.function(session$userData$...futurenow_timer)){
+    #     shiny_futurenow_init(session, getOption("futurenow.shiny.delay", 0.5))
+    #   }
+    #   session$userData$...futurenow_func <- fun
+    # } else {
 
       now <- Sys.time()
       last_scheduled <<- now
@@ -45,7 +47,7 @@ evallater <- local({
                      as.numeric(now - last_scheduled, unit = 'secs'),
                      later::next_op_secs()))
       later::later(fun, delay = delay)
-    }
+    # }
 
   }
 })

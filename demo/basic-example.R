@@ -1,6 +1,6 @@
 library(future)
 library(futurenow)
-# plan('futurenow', workers=2, type = 'MulticoreFuture')
+# futurenow::debug_futurenow()
 plan('futurenow', workers=2)
 
 # limit global size to be 1KB
@@ -10,29 +10,26 @@ options(future.globals.maxSize = 1024^2)
 a <- 'main session'
 b <- rnorm(1e6)
 
-# Case 1: everything in `run_in_master` is in main session
-fu <- future({
-  a <- 'future session'
-  run_in_master({
-    # Run in main session, b will not be serialized
-    c <- list(a = a, m = sum(b))
-    register_name(c)
-  })
-  sprintf("a is from %s, sum(b)=%.2f is calculated in main session",
-          c$a, c$m)
-})
-value(fu)
 
-# Case 2: variable `a` is from local future session
 fu <- future({
   a <- 'future session'
+
+  # Case 1: everything in `run_in_master` is in main session
+  run_in_master({
+    c1 <- sprintf("a is from %s, sum(b)=%.2f is calculated in main session",
+                  a, sum(b))
+    register_name(c1)
+  })
+
+  # Case 2: variable `a` is from local future session
   run_in_master({
     # Run in main session, b will not be serialized
-    c <- list(a = a, m = sum(b))
-    register_name(c)
+    c2 <- sprintf("a is from %s, sum(b)=%.2f is calculated in main session",
+                  a, sum(b))
+    register_name(c2)
   }, local_vars = 'a')
-  sprintf("a is from %s, sum(b)=%.2f is calculated in main session",
-          c$a, c$m)
+
+  c(c1, c2)
 })
 value(fu)
 

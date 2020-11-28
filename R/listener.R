@@ -37,7 +37,9 @@ listener_blocked <- function(future, max_try = Inf){
         }
       )
       max_try_left = max_try_left - 1
-      Sys.sleep(delay)
+      if(max_try_left > 0){
+        Sys.sleep(delay)
+      }
     }
 
   }, error = function(e){
@@ -94,6 +96,7 @@ listener <- local({
   delay <- 0.1
 
   function(future){
+    fdebug("[Queue] size:", length(queue))
     if(!missing(future)){
       queue[[length(queue) + 1]] <<- future
       delay <<- future$extra$listener_delay

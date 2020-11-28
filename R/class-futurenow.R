@@ -46,7 +46,7 @@ FutureNowFuture <- function(
 
   future <- import_future(type)(
     expr = expr, envir = envir, substitute = FALSE, globals = fake_gp$globals,
-    packages = unique(c(packages, 'futurenow', fake_gp$packages)),
+    packages = unique(c(packages, 'futurenow', fake_gp$packages, gp$packages)),
     label = label, workers = workers, ...)
 
   if(!is.list(future$extra)){
@@ -100,6 +100,10 @@ resolved.FutureNowFuture <- function(x, ...) {
     return(TRUE)
   }
 
+  # Still running, but let's block it for a second to see if there's any
+  # tasks blocking the session
+  listener_blocked(x, max_try = 1L)
+
   NextMethod()
 }
 
@@ -107,6 +111,7 @@ resolved.FutureNowFuture <- function(x, ...) {
 #' @keywords internal
 #' @export
 result.FutureNowFuture <- function(future, ...) {
+  fdebug("[result.FutureNowFuture] called")
   result <- future$result
   if (!is.null(result)) {
     if (inherits(result, "FutureError")) stop(result)
