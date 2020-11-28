@@ -76,21 +76,111 @@
 <a href="#futurenow" class="anchor"></a>futurenow</h1></div>
 <!-- badges: start -->
 
-<p>The goal of futurenow is to …</p>
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
-<p>You can install the released version of futurenow from <a href="https://CRAN.R-project.org">CRAN</a> with:</p>
+<p>You can install the released version of <code>futurenow</code> from <a href="https://CRAN.R-project.org">CRAN</a> with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"futurenow"</span><span class="op">)</span></code></pre></div>
+<p>Alternatively, you could install from Github with:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
+<span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"dipterix/futurenow"</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="introduction" class="section level2">
+<h2 class="hasAnchor">
+<a href="#introduction" class="anchor"></a>Introduction</h2>
+<p>The R package <a href="https://github.com/HenrikBengtsson/future"><strong>future</strong></a> provides a unified framework for parallel and distributed processing in R using <code>futures''. A</code>future’’ is usually a separated process that runs R command without blocking its master session, which is often the R session users are operating on.</p>
+<p>One of the issues with asynchronously evaluating R expressions in another process is data transfer. If the data is an external pointer, this procedure is hard unless using forked process. If the data is too large, transferring the large data around is both time consuming (serialization and needs extra time) and memory consuming. Then the user might want to run the following data pipeline:</p>
+<p>Process A runs asynchronously, which might take a while. Process B requires the results from A and has to run in the main session. The results of B is sent back to the future session to continue C. Only process B blocks the main session.</p>
 </div>
 <div id="example" class="section level2">
 <h2 class="hasAnchor">
 <a href="#example" class="anchor"></a>Example</h2>
 <p>This is a basic example which shows you how to solve a common problem:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dipterix/futurenow">futurenow</a></span><span class="op">)</span>
-<span class="co">## basic example code</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/HenrikBengtsson/future">future</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dipterix/futurenow">futurenow</a></span><span class="op">)</span>
+
+<span class="co"># This is the first step </span>
+<span class="fu"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span><span class="op">(</span><span class="va">futurenow</span>, workers <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+
+<span class="co"># Generate a "large data"</span>
+<span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq_len</a></span><span class="op">(</span><span class="fl">1e8</span><span class="op">)</span>
+
+<span class="va">a</span> <span class="op">&lt;-</span> <span class="fl">1</span>
+
+<span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/future/man/future.html">future</a></span><span class="op">(</span><span class="op">{</span>
+
+  <span class="co"># pipeline A ...</span>
+  <span class="va">a</span> <span class="op">&lt;-</span> <span class="fl">10</span>
+  
+  <span class="co"># pipeline B, send to master session</span>
+  <span class="fu"><a href="reference/futurenow.html">run_in_master</a></span><span class="op">(</span><span class="op">{</span>
+    <span class="va">b</span> <span class="op">&lt;-</span> <span class="va">a</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>
+    
+    <span class="co"># Register `b` to the future session</span>
+    <span class="fu"><a href="reference/futurenow.html">register_name</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span>
+
+    <span class="co"># local_vars sends variables along with the instruction</span>
+  <span class="op">}</span>, local_vars <span class="op">=</span> <span class="st">'a'</span><span class="op">)</span>
+  
+  <span class="co"># pipeline C</span>
+  <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"a + min(x) = %.1f"</span>, <span class="va">b</span><span class="op">)</span>
+  
+<span class="op">}</span><span class="op">)</span>
+
+<span class="fu"><a href="https://rdrr.io/pkg/future/man/value.html">value</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span>
+<span class="co">#&gt; [1] "a + min(x) = 11.0"</span></code></pre></div>
+<p><code>run_in_master</code> sends expression back to the main session. The returned value should be wrapped by <code>register_name</code>.</p>
+<p><code>local_vars</code> indicates which variables are to be sent to the main session. Default is none, then all the variables should be in the main session. For example:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">a</span> <span class="op">&lt;-</span> <span class="fl">1</span>
+
+<span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/future/man/future.html">future</a></span><span class="op">(</span><span class="op">{</span>
+  <span class="va">a</span> <span class="op">&lt;-</span> <span class="fl">10</span>
+  <span class="fu"><a href="reference/futurenow.html">run_in_master</a></span><span class="op">(</span><span class="op">{</span>
+    <span class="va">b</span> <span class="op">&lt;-</span> <span class="va">a</span>
+    <span class="fu"><a href="reference/futurenow.html">register_name</a></span><span class="op">(</span><span class="va">b</span><span class="op">)</span>
+  <span class="op">}</span>, local_vars <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
+  <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"a = %.1f"</span>, <span class="va">b</span><span class="op">)</span>
+<span class="op">}</span><span class="op">)</span>
+
+<span class="fu"><a href="https://rdrr.io/pkg/future/man/value.html">value</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span>
+<span class="co">#&gt; [1] "a = 1.0"</span></code></pre></div>
+<p>Two <code>a</code> are defined: in the main session <code>a=1</code> while in the future <code>a=10</code>. <code>local_vars=FALSE</code> means pipeline B only uses <code>a</code> in the main session.</p>
+</div>
+<div id="futurenow_lapply-and-a-shiny-progress-example" class="section level2">
+<h2 class="hasAnchor">
+<a href="#futurenow_lapply-and-a-shiny-progress-example" class="anchor"></a><code>futurenow_lapply</code>, and A Shiny Progress Example</h2>
+<p>The function <code>futurenow_lapply</code> asynchronously applies a function to each elements of input vectors and returns a list. Updating shiny progress bar in a parallel process can be achieved via <code>run_in_master</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/HenrikBengtsson/future">future</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dipterix/futurenow">futurenow</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="http://shiny.rstudio.com">shiny</a></span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span><span class="op">(</span><span class="va">futurenow</span>, workers <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+
+<span class="va">ui</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/fluidPage.html">fluidPage</a></span><span class="op">(</span>
+  <span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/actionButton.html">actionButton</a></span><span class="op">(</span><span class="st">"ok"</span>, <span class="st">"Run"</span><span class="op">)</span>
+<span class="op">)</span>
+
+<span class="va">server</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">input</span>, <span class="va">output</span>, <span class="va">session</span><span class="op">)</span> <span class="op">{</span>
+  <span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/observeEvent.html">observeEvent</a></span><span class="op">(</span><span class="va">input</span><span class="op">$</span><span class="va">ok</span>, <span class="op">{</span>
+    <span class="va">p</span> <span class="op">&lt;-</span> <span class="va"><a href="https://shiny.rstudio.com/reference/shiny/latest/Progress.html">Progress</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>session <span class="op">=</span> <span class="va">session</span>, min <span class="op">=</span> <span class="fl">0</span>, max <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>
+
+    <span class="fu"><a href="reference/futurenow_lapply.html">futurenow_lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span><span class="op">{</span>
+      <span class="fu"><a href="https://rdrr.io/r/base/Sys.sleep.html">Sys.sleep</a></span><span class="op">(</span><span class="fl">0.3</span><span class="op">)</span>
+      <span class="co"># inc progress bar</span>
+      <span class="fu"><a href="reference/futurenow.html">run_in_master</a></span><span class="op">(</span><span class="op">{</span>
+        <span class="va">p</span><span class="op">$</span><span class="fu">inc</span><span class="op">(</span>amount <span class="op">=</span> <span class="fl">1</span>, message <span class="op">=</span> <span class="st">'Running item'</span>, detail <span class="op">=</span> <span class="va">i</span><span class="op">)</span>
+      <span class="op">}</span>, local_vars <span class="op">=</span> <span class="st">'i'</span><span class="op">)</span>
+    <span class="op">}</span><span class="op">)</span>
+
+    <span class="va">p</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span>
+  <span class="op">}</span><span class="op">)</span>
+<span class="op">}</span>
+
+<span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/shinyApp.html">shinyApp</a></span><span class="op">(</span><span class="va">ui</span>, <span class="va">server</span><span class="op">)</span></code></pre></div>
 </div>
 </div>
   </div>
