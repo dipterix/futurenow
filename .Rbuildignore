@@ -3,3 +3,5 @@
 ^\.debug\.log$
 ^\.github$
 ^\.travis\.yml$
+^LICENSE\.md$
+^cran-comments\.md$
