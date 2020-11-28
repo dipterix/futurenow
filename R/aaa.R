@@ -1,15 +1,15 @@
 #' @import future
 #' @importFrom globals walkAST
 
-STATUS_STOP = '0'
-STATUS_SLAVE_RUNNING  = '1'
-STATUS_MASTER_RUNNING = '2'
-STATUS_MASTER_FINISHED = '3'
-STATUS_BUSY = '4'
+STATUS_STOP <- '0'
+STATUS_SLAVE_RUNNING  <- '1'
+STATUS_MASTER_RUNNING <- '2'
+STATUS_MASTER_FINISHED <- '3'
+STATUS_BUSY <- '4'
 
-ERROR_LISTENER = 'futurenow.master.listener.error'
-ERROR_EVALUATION = 'futurenow.master.exec.error'
-ERROR_SERIALIZATION = 'futurenow.slave.serialize.error'
+ERROR_LISTENER <- 'futurenow.master.listener.error'
+ERROR_EVALUATION <- 'futurenow.master.exec.error'
+ERROR_SERIALIZATION <- 'futurenow.slave.serialize.error'
 
 
 fdebug <- function(..., end = '\n', out = getOption('futurenow.debug.file', stdout())){
@@ -85,7 +85,7 @@ import_parallel <- function(name, default = NULL) {
 
 stop_if_not <- function (...) {
   res <- list(...)
-  for (ii in 1L:length(res)) {
+  for (ii in seq_len(length(res))) {
     res_ii <- .subset2(res, ii)
     if (length(res_ii) != 1L || is.na(res_ii) || !res_ii) {
       mc <- match.call()

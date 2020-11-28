@@ -87,7 +87,7 @@ schedules future process. This usually happens in the main process where
 the users interact with. The ``slave sessions'' or the ``future sessions''
 are the R processes that asynchronous codes are evaluated.
 
-One of an issue with asynchronously evaluating R expressions in another
+One of the issues with asynchronously evaluating R expressions in another
 process is data transfer. If the data is an external pointer, this procedure
 is hard unless using forked process. If the data is too large, transferring
 the large data around is both time consuming (serialization and needs extra

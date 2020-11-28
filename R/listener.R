@@ -36,7 +36,7 @@ listener_blocked <- function(future, max_try = Inf){
           }
         }
       )
-      max_try_left = max_try_left - 1
+      max_try_left <- max_try_left - 1
       if(max_try_left > 0){
         Sys.sleep(delay)
       }

@@ -182,7 +182,7 @@ futurenow <- function(expr, envir = parent.frame(), substitute = TRUE,
                       listener.delay = 0.1, globals = TRUE, label = NULL,
                       type = c("MultisessionFuture", "MulticoreFuture"),
                       workers = availableCores(), ...) {
-  type = match.arg(type)
+  type <- match.arg(type)
   if (substitute) expr <- substitute(expr)
 
   if (is.null(workers)) workers <- availableCores()
@@ -293,6 +293,7 @@ await.MulticoreFuture <- function(future, ...){
   fdebug("Requesting core...")
   requestCore(await = function() {
     futures <- FutureRegistry(reg, action = "list", earlySignal = FALSE)
+    # assign('f', futures, envir = globalenv())
     fdebug("Running futures (multicore):", length(futures))
     lapply(futures, listener_blocked, max_try = 3L)
     # listener_blocked
