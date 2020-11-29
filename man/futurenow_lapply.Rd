@@ -2,7 +2,7 @@
 % Please edit documentation in R/apply.R
 \name{futurenow_lapply}
 \alias{futurenow_lapply}
-\title{A wrapper of \code{\link[future.apply]{future_lapply}} that has the correct
+\title{A wrapper of \code{\link[future.apply:future_lapply]{future.apply::future_lapply()}} that has the correct
 environment}
 \usage{
 futurenow_lapply(
@@ -25,13 +25,13 @@ futurenow_lapply(
 \item{FUN}{Function to apply on each element of \code{X}}
 
 \item{...}{Further argument to be passed to \code{FUN} or
-\code{\link[future.apply]{future_eapply}}}
+\code{\link[future.apply:future_lapply]{future.apply::future_eapply()}}}
 
 \item{future.envir}{Where the future instances should be created}
 
 \item{future.globals}{A logical, a character vector, or a named list for
 controlling how global variables are handled; See
-\code{\link[future.apply]{future_eapply}}}
+\code{\link[future.apply:future_lapply]{future.apply::future_eapply()}}}
 
 \item{future.packages}{Character vector of packages for future instances to
 load}
@@ -40,21 +40,21 @@ load}
 
 \item{future.seed}{A logical or an integer (of length one or seven), or a
 list of \code{length(X)} with prespecified random seeds; see
-\code{\link[future.apply]{future_eapply}}}
+\code{\link[future.apply:future_lapply]{future.apply::future_eapply()}}}
 
 \item{future.scheduling, future.chunk.size}{See
-\code{\link[future.apply]{future_eapply}}}
+\code{\link[future.apply:future_lapply]{future.apply::future_eapply()}}}
 
 \item{future.label}{Label to be assigned to each future instances}
 }
 \value{
 A list with same length and names as \code{X}. See
-\code{\link[base]{lapply}} for details.
+\code{\link[base:lapply]{base::lapply()}} for details.
 }
 \description{
-Fixes \code{\link[future.apply]{future_lapply}} issue where
+Fixes \code{\link[future.apply:future_lapply]{future.apply::future_lapply()}} issue where
 the environment is not set properly.
 }
 \seealso{
-\code{\link[future.apply]{future_eapply}},\code{\link[base]{lapply}}
+\code{\link[future.apply:future_lapply]{future.apply::future_eapply()}},\code{\link[base:lapply]{base::lapply()}}
 }

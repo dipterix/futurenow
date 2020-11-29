@@ -8,24 +8,24 @@
 #' @param listener.delay Time interval in second the master main session should
 #' wait to handle connections from the future instances; default is 0.1
 #' @param type The actual type of future to run, choices are
-#' \code{"MultisessionFuture"} and \code{"MulticoreFuture"}; default is
-#' \code{"MultisessionFuture"}
+#' `"MultisessionFuture"` and `"MulticoreFuture"`; default is
+#' `"MultisessionFuture"`
 #' @param workers Max number of parallel instances to run at the same time
-#' @param substitute Should \code{expr} be quoted? Default is \code{TRUE}
+#' @param substitute Should `expr` be quoted? Default is `TRUE`
 #' @param packages Packages for future instances to load
-#' @param env Where to \code{local_vars} to search variables from
+#' @param env Where to `local_vars` to search variables from
 #' @param local_vars Local variable names in the future object to send along
-#' to the master session for evaluation; default is \code{FALSE}, meaning
+#' to the master session for evaluation; default is `FALSE`, meaning
 #' all variables should be in the main session
 #' @param name R symbol to register to the future processes
 #' @param .env Internally used
-#' @param globals,label,... Passed to \code{\link[future]{future}}
+#' @param globals,label,... Passed to [future::future()]
 #'
-#' @return The function \code{futurenow} and \code{FutureNowFuture} return
-#' \code{\link[future]{future}} instances with class 'FutureNowFuture'. Function
-#' \code{run_in_master} and \code{register_name} return nothing.
+#' @return The function `futurenow` and `FutureNowFuture` return
+#' [future::future()] instances with class 'FutureNowFuture'. Function
+#' `run_in_master` and `register_name` return nothing.
 #'
-#' @seealso \code{\link[future]{future}}, \code{\link[future]{plan}}
+#' @seealso [future::future()], [future::plan()]
 #'
 #' @details In this package, ``master session'' means the R session which
 #' schedules future process. This usually happens in the main process where
@@ -37,58 +37,58 @@
 #' is hard unless using forked process. If the data is too large, transferring
 #' the large data around is both time consuming (serialization and needs extra
 #' time) and memory consuming. Suppose a user wants to run a data pipeline
-#' \code{A}, \code{B}, and \code{C}, where only \code{B} requires handling the
-#' data. One can choose to run \code{A} asynchronously, then \code{B} in the
-#' main session, then \code{C} again asynchronously.
+#' `A`, `B`, and `C`, where only `B` requires handling the
+#' data. One can choose to run `A` asynchronously, then `B` in the
+#' main session, then `C` again asynchronously.
 #'
-#' Normally \code{\link[future]{future}} instance only allows
+#' Normally [future::future()] instance only allows
 #' instructions from the master process to the slave nodes. The reversed
 #' communication is missing or limited. This prevents the above procedure
 #' to run within one future session.
 #'
-#' Motivated by this objective, \code{futurenow} is created. In
-#' \code{futurenow}, the above procedure is possible with
-#' \code{run_in_master} and \code{register_name}.
+#' Motivated by this objective, `futurenow` is created. In
+#' `futurenow`, the above procedure is possible with
+#' `run_in_master` and `register_name`.
 #'
-#' During the asynchronous evaluation, the function \code{run_in_master} sends
+#' During the asynchronous evaluation, the function `run_in_master` sends
 #' the expression inside to the master session to evaluate. Once finished,
-#' variables are sent back to the future sessions via \code{register_name}.
-#' The variables sent back via \code{register_name} can then be used in
+#' variables are sent back to the future sessions via `register_name`.
+#' The variables sent back via `register_name` can then be used in
 #' future sessions as-is.
 #'
-#' When \code{run_in_master} asks the master session to evaluate code, the
+#' When `run_in_master` asks the master session to evaluate code, the
 #' users can also choose which variables in the future sessions along with
 #' the instructions; see examples.
 #'
 #' The other parts are exactly the same as other future objects.
 #'
-#' @section An Issue with \code{MulticoreFuture}:
+#' @section An Issue with `MulticoreFuture`:
 #'
-#' The strategy \code{futurenow} has two internal types:
-#' \code{MultisessionFuture} and \code{MulticoreFuture}.
-#' \code{MultisessionFuture} spawns a \code{\link[future]{multisession}}
-#' process and \code{MulticoreFuture} spawns a forked
-#' \code{\link[future]{multicore}} process. While multisession works in
+#' The strategy `futurenow` has two internal types:
+#' `MultisessionFuture` and `MulticoreFuture`.
+#' `MultisessionFuture` spawns a [future::multisession()]
+#' process and `MulticoreFuture` spawns a forked
+#' [future::multicore()] process. While multisession works in
 #' any situation, multicore is faster since it uses a "fork" process that
 #' has shared memory and does not need serialization.
-#' However, there are some limits using \code{MulticoreFuture}. For example,
+#' However, there are some limits using `MulticoreFuture`. For example,
 #' it's only supported on 'Mac' and 'Linux' system; if used improperly
 #' in 'RStudio', a fork bomb could be malicious to the system (see also
-#' \url{https://en.wikipedia.org/wiki/Fork_bomb}).
+#' <https://en.wikipedia.org/wiki/Fork_bomb>).
 #'
-#' When choosing \code{MultisessionFuture} type, a listener will run in the
+#' When choosing `MultisessionFuture` type, a listener will run in the
 #' background monitoring requests from the future sessions. However when
-#' running with \code{MulticoreFuture}, the listener could cause a fork bomb.
+#' running with `MulticoreFuture`, the listener could cause a fork bomb.
 #' Therefore, the listener will stop running in the background and some
-#' future processes may pause at stage \code{B} (see details, the procedure
-#' that requires interaction with the main session) if \code{run_in_master} is
+#' future processes may pause at stage `B` (see details, the procedure
+#' that requires interaction with the main session) if `run_in_master` is
 #' called. In such case, the future instance might never be resolved if the
 #' listener is not triggered.
 #'
 #' To trigger the listener manually, one only needs to "try to collect" the
-#' results, for instance, \code{value(x)}, \code{resolve(x)}, or
-#' \code{result(x)} will trigger the listener and collect the results.
-#' \code{resolved(x)} will also trigger the listener, but it does not block
+#' results, for instance, `value(x)`, `resolve(x)`, or
+#' `result(x)` will trigger the listener and collect the results.
+#' `resolved(x)` will also trigger the listener, but it does not block
 #' the main session. When trying to spawn new future instances, the listener
 #' will also trigger automatically.
 #'

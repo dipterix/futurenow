@@ -37,10 +37,10 @@ fdebug <- function(..., end = '\n', out = getOption('futurenow.debug.file', stdo
 
 
 #' Debug package 'futurenow'
-#' @param tmpfile A temporary log file or connection; default is \code{stdout()}
-#' @param reset Whether to reset log file if \code{tmpfile} is a local file
+#' @param tmpfile A temporary log file or connection; default is `stdout()`
+#' @param reset Whether to reset log file if `tmpfile` is a local file
 #' @param master_only Whether only to log messages from master branch
-#' @return Absolute path of \code{tmpfile} if \code{tmpfile} is a character,
+#' @return Absolute path of `tmpfile` if `tmpfile` is a character,
 #' or as-is if it is a connection.
 #' @export
 debug_futurenow <- function(tmpfile = stdout(),

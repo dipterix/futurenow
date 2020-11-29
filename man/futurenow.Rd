@@ -51,7 +51,7 @@ run_in_master(
 \item{listener.delay}{Time interval in second the master main session should
 wait to handle connections from the future instances; default is 0.1}
 
-\item{globals, label, ...}{Passed to \code{\link[future]{future}}}
+\item{globals, label, ...}{Passed to \code{\link[future:future]{future::future()}}}
 
 \item{type}{The actual type of future to run, choices are
 \code{"MultisessionFuture"} and \code{"MulticoreFuture"}; default is
@@ -73,7 +73,7 @@ all variables should be in the main session}
 }
 \value{
 The function \code{futurenow} and \code{FutureNowFuture} return
-\code{\link[future]{future}} instances with class 'FutureNowFuture'. Function
+\code{\link[future:future]{future::future()}} instances with class 'FutureNowFuture'. Function
 \code{run_in_master} and \code{register_name} return nothing.
 }
 \description{
@@ -82,9 +82,7 @@ to evaluate, but allows to run code in the master session during the
 evaluation.
 }
 \details{
-In this package, ``master session'' means the R session which
-schedules future process. This usually happens in the main process where
-the users interact with. The ``slave sessions'' or the ``future sessions''
+In this package, \verb{master session'' means the R session which schedules future process. This usually happens in the main process where the users interact with. The }slave sessions'' or the ``future sessions''
 are the R processes that asynchronous codes are evaluated.
 
 One of the issues with asynchronously evaluating R expressions in another
@@ -96,7 +94,7 @@ time) and memory consuming. Suppose a user wants to run a data pipeline
 data. One can choose to run \code{A} asynchronously, then \code{B} in the
 main session, then \code{C} again asynchronously.
 
-Normally \code{\link[future]{future}} instance only allows
+Normally \code{\link[future:future]{future::future()}} instance only allows
 instructions from the master process to the slave nodes. The reversed
 communication is missing or limited. This prevents the above procedure
 to run within one future session.
@@ -122,9 +120,9 @@ The other parts are exactly the same as other future objects.
 
 The strategy \code{futurenow} has two internal types:
 \code{MultisessionFuture} and \code{MulticoreFuture}.
-\code{MultisessionFuture} spawns a \code{\link[future]{multisession}}
+\code{MultisessionFuture} spawns a \code{\link[future:multisession]{future::multisession()}}
 process and \code{MulticoreFuture} spawns a forked
-\code{\link[future]{multicore}} process. While multisession works in
+\code{\link[future:multicore]{future::multicore()}} process. While multisession works in
 any situation, multicore is faster since it uses a "fork" process that
 has shared memory and does not need serialization.
 However, there are some limits using \code{MulticoreFuture}. For example,
@@ -266,5 +264,5 @@ if(interactive()){
 
 }
 \seealso{
-\code{\link[future]{future}}, \code{\link[future]{plan}}
+\code{\link[future:future]{future::future()}}, \code{\link[future:plan]{future::plan()}}
 }

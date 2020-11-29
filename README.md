@@ -2,6 +2,7 @@
 # futurenow
 
 <!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 [![R build status](https://github.com/dipterix/futurenow/workflows/R-CMD-check/badge.svg)](https://github.com/dipterix/futurenow/actions)
 [![Travis build status](https://travis-ci.org/dipterix/futurenow.svg?branch=main)](https://travis-ci.org/dipterix/futurenow)
 [![CRAN status](https://www.r-pkg.org/badges/version/futurenow)](https://CRAN.R-project.org/package=futurenow)
@@ -9,22 +10,17 @@
 
 ## Installation
 
-You can install the released version of `futurenow` from [CRAN](https://CRAN.R-project.org) with:
+This repository is currently not on CRAN.
 
 ``` r
-install.packages("futurenow")
-```
-
-Alternatively, you could install from Github with:
-
-``` r
-install.packages("remotes")
+# install.packages("remotes")
 remotes::install_github("dipterix/futurenow")
 ```
 
+
 ## Introduction
 
-The R package [**future**](https://github.com/HenrikBengtsson/future) provides a unified framework for parallel and distributed processing in R using ``futures''. A ``future'' is usually a separated process that runs R command without blocking its master session, which is often the R session users are operating on.
+The R package [**future**](https://github.com/HenrikBengtsson/future) provides a unified framework for parallel and distributed processing in R using `future`s. A `future` is usually a separated process that runs R command without blocking its master session, which is often the R session users are operating on.
 
 One of the issues with asynchronously evaluating R expressions in another process is data transfer. If the data is an external pointer, this procedure is hard unless using forked process. If the data is too large, transferring the large data around is both time consuming (serialization and needs extra time) and memory consuming. Then the user might want to run the following data pipeline:
 
@@ -129,3 +125,15 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 
 ```
+
+
+## An Issue with `MulticoreFuture`
+
+
+The strategy `futurenow` is currently supporting two internal types: `MultisessionFuture` and `MulticoreFuture`. `MultisessionFuture` spawns a `multisession` process and `MulticoreFuture` spawns a forked `multicore` process. While `multisession` works in any situation, `multicore` is faster since it uses a "fork" process that has shared memory and does not need serialization. However, there are some limits using `MulticoreFuture`. For example, it's only supported on `Mac` and Linux` system; if used improperly, a [fork bomb](https://en.wikipedia.org/wiki/Fork_bomb) could be malicious to the system.
+
+When choosing `MultisessionFuture` type, a listener will run in the background monitoring requests from the future sessions. However when running with `MulticoreFuture`, the listener could cause a fork bomb. Therefore, the listener will stop running in the background and some future processes may pause at pipeline B (see figure above, the procedure that requires interaction with the main session) if `run_in_master` is called. In such case, the future instance might never be resolved if the listener is not triggered. Users need to trigger the listeners manually.
+
+To trigger the listener manually, one only needs to "try to collect" the results, for instance, `value(x)`, `resolve(x)`, or `result(x)` will trigger the listener to collect the results. `resolved(x)` will also trigger the listener, but it does not block the main session. When trying to spawn new future instances, the listener will also trigger automatically.
+
+
