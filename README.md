@@ -136,4 +136,46 @@ When choosing `MultisessionFuture` type, a listener will run in the background m
 
 To trigger the listener manually, one only needs to "try to collect" the results, for instance, `value(x)`, `resolve(x)`, or `result(x)` will trigger the listener to collect the results. `resolved(x)` will also trigger the listener, but it does not block the main session. When trying to spawn new future instances, the listener will also trigger automatically.
 
+``` r
+library(future)
+library(futurenow)
+plan(futurenow, type = 'MulticoreFuture', workers = 2)
+
+func <- function(){
+  now = Sys.time()
+  future({
+    Sys.sleep(1)
+    msg = sprintf("Procedure A finished: %.1f s", Sys.time() - now)
+    run_in_master({
+      msg = c(msg, sprintf("Procedure B finished: %.1f s", Sys.time() - now))
+      register_name(msg)
+    }, local_vars = 'msg')
+    Sys.sleep(2)
+    msg = c(msg, sprintf("Procedure C finished: %.1f s", Sys.time() - now))
+    paste(msg, collapse = '\n')
+  })
+}
+
+# The listener still runs if single future is spawned 
+
+f <- func()
+
+# wait for at least 1 seconds
+cat(value(f))   
+#> Procedure A finished: 1.0 s
+#> Procedure B finished: 1.1 s   <--- B is executed right after A
+#> Procedure C finished: 3.2 s
+
+# Creating two future instances and listener is stopped
+
+f1 <- func(); f2 <- func(); f3 <- func(); 
+futurenow:::listener()
+
+# IMPORTANT, wait for at least 1 seconds
+cat(value(f3))
+# > Procedure A finished: 1.0 s
+# > Procedure B finished: 9.2 s  <--- I waited for 8 seconds to collect value
+# > Procedure C finished: 11.4 s
+```
+
 
