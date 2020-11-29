@@ -182,7 +182,7 @@ wait to handle connections from the future instances; default is 0.1</p></td>
     </tr>
     <tr>
       <th>globals, label, ...</th>
-      <td><p>Passed to <code><a href='https://rdrr.io/pkg/future/man/future.html'>future</a></code></p></td>
+      <td><p>Passed to <code><a href='https://rdrr.io/pkg/future/man/future.html'>future::future()</a></code></p></td>
     </tr>
     <tr>
       <th>type</th>
@@ -221,13 +221,11 @@ all variables should be in the main session</p></td>
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>The function <code>futurenow</code> and <code>FutureNowFuture</code> return
-<code><a href='https://rdrr.io/pkg/future/man/future.html'>future</a></code> instances with class 'FutureNowFuture'. Function
+<code><a href='https://rdrr.io/pkg/future/man/future.html'>future::future()</a></code> instances with class 'FutureNowFuture'. Function
 <code>run_in_master</code> and <code>register_name</code> return nothing.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>In this package, ``master session'' means the R session which
-schedules future process. This usually happens in the main process where
-the users interact with. The ``slave sessions'' or the ``future sessions''
+    <p>In this package, <code>master session'' means the R session which schedules future process. This usually happens in the main process where the users interact with. The </code>slave sessions'' or the ``future sessions''
 are the R processes that asynchronous codes are evaluated.</p>
 <p>One of the issues with asynchronously evaluating R expressions in another
 process is data transfer. If the data is an external pointer, this procedure
@@ -237,7 +235,7 @@ time) and memory consuming. Suppose a user wants to run a data pipeline
 <code>A</code>, <code>B</code>, and <code>C</code>, where only <code>B</code> requires handling the
 data. One can choose to run <code>A</code> asynchronously, then <code>B</code> in the
 main session, then <code>C</code> again asynchronously.</p>
-<p>Normally <code><a href='https://rdrr.io/pkg/future/man/future.html'>future</a></code> instance only allows
+<p>Normally <code><a href='https://rdrr.io/pkg/future/man/future.html'>future::future()</a></code> instance only allows
 instructions from the master process to the slave nodes. The reversed
 communication is missing or limited. This prevents the above procedure
 to run within one future session.</p>
@@ -260,9 +258,9 @@ the instructions; see examples.</p>
 
 <p>The strategy <code>futurenow</code> has two internal types:
 <code>MultisessionFuture</code> and <code>MulticoreFuture</code>.
-<code>MultisessionFuture</code> spawns a <code><a href='https://rdrr.io/pkg/future/man/multisession.html'>multisession</a></code>
+<code>MultisessionFuture</code> spawns a <code><a href='https://rdrr.io/pkg/future/man/multisession.html'>future::multisession()</a></code>
 process and <code>MulticoreFuture</code> spawns a forked
-<code><a href='https://rdrr.io/pkg/future/man/multicore.html'>multicore</a></code> process. While multisession works in
+<code><a href='https://rdrr.io/pkg/future/man/multicore.html'>future::multicore()</a></code> process. While multisession works in
 any situation, multicore is faster since it uses a "fork" process that
 has shared memory and does not need serialization.
 However, there are some limits using <code>MulticoreFuture</code>. For example,
@@ -285,7 +283,7 @@ the main session. When trying to spawn new future instances, the listener
 will also trigger automatically.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='https://rdrr.io/pkg/future/man/future.html'>future</a></code>, <code><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></code></p></div>
+    <div class='dont-index'><p><code><a href='https://rdrr.io/pkg/future/man/future.html'>future::future()</a></code>, <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan()</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'>

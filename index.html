@@ -79,18 +79,15 @@
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
-<p>You can install the released version of <code>futurenow</code> from <a href="https://CRAN.R-project.org">CRAN</a> with:</p>
+<p>This repository is currently not on CRAN.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"futurenow"</span><span class="op">)</span></code></pre></div>
-<p>Alternatively, you could install from Github with:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span>
+<code class="sourceCode R"><span class="co"># install.packages("remotes")</span>
 <span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html">install_github</a></span><span class="op">(</span><span class="st">"dipterix/futurenow"</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="introduction" class="section level2">
 <h2 class="hasAnchor">
 <a href="#introduction" class="anchor"></a>Introduction</h2>
-<p>The R package <a href="https://github.com/HenrikBengtsson/future"><strong>future</strong></a> provides a unified framework for parallel and distributed processing in R using <code>futures''. A</code>future’’ is usually a separated process that runs R command without blocking its master session, which is often the R session users are operating on.</p>
+<p>The R package <a href="https://github.com/HenrikBengtsson/future"><strong>future</strong></a> provides a unified framework for parallel and distributed processing in R using <code>future</code>s. A <code>future</code> is usually a separated process that runs R command without blocking its master session, which is often the R session users are operating on.</p>
 <p>One of the issues with asynchronously evaluating R expressions in another process is data transfer. If the data is an external pointer, this procedure is hard unless using forked process. If the data is too large, transferring the large data around is both time consuming (serialization and needs extra time) and memory consuming. Then the user might want to run the following data pipeline:</p>
 <p><img src="https://github.com/dipterix/futurenow/raw/main/inst/diagram.png" alt="Diagram: futurenow runs pipeline B in the main session"></p>
 <p>Process A runs asynchronously, which might take a while. Process B requires the results from A and has to run in the main session. The results of B is sent back to the future session to continue C. Only process B blocks the main session.</p>
@@ -99,7 +96,7 @@
 <h2 class="hasAnchor">
 <a href="#example" class="anchor"></a>Example</h2>
 <p>This is a basic example which shows you how to solve a common problem:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/HenrikBengtsson/future">future</a></span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dipterix/futurenow">futurenow</a></span><span class="op">)</span>
 
@@ -135,7 +132,7 @@
 <span class="co">#&gt; [1] "a + min(x) = 11.0"</span></code></pre></div>
 <p><code>run_in_master</code> sends expression back to the main session. The returned value should be wrapped by <code>register_name</code>.</p>
 <p><code>local_vars</code> indicates which variables are to be sent to the main session. Default is none, then all the variables should be in the main session. For example:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">a</span> <span class="op">&lt;-</span> <span class="fl">1</span>
 
 <span class="va">f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/future/man/future.html">future</a></span><span class="op">(</span><span class="op">{</span>
@@ -155,7 +152,7 @@
 <h2 class="hasAnchor">
 <a href="#futurenow_lapply-and-a-shiny-progress-example" class="anchor"></a><code>futurenow_lapply</code>, and A Shiny Progress Example</h2>
 <p>The function <code>futurenow_lapply</code> asynchronously applies a function to each elements of input vectors and returns a list. Updating shiny progress bar in a parallel process can be achieved via <code>run_in_master</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/HenrikBengtsson/future">future</a></span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dipterix/futurenow">futurenow</a></span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="http://shiny.rstudio.com">shiny</a></span><span class="op">)</span>
@@ -183,6 +180,54 @@
 
 <span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/shinyApp.html">shinyApp</a></span><span class="op">(</span><span class="va">ui</span>, <span class="va">server</span><span class="op">)</span></code></pre></div>
 </div>
+<div id="an-issue-with-multicorefuture" class="section level2">
+<h2 class="hasAnchor">
+<a href="#an-issue-with-multicorefuture" class="anchor"></a>An Issue with <code>MulticoreFuture</code>
+</h2>
+<p>The strategy <code>futurenow</code> is currently supporting two internal types: <code>MultisessionFuture</code> and <code>MulticoreFuture</code>. <code>MultisessionFuture</code> spawns a <code>multisession</code> process and <code>MulticoreFuture</code> spawns a forked <code>multicore</code> process. While <code>multisession</code> works in any situation, <code>multicore</code> is faster since it uses a “fork” process that has shared memory and does not need serialization. However, there are some limits using <code>MulticoreFuture</code>. For example, it’s only supported on <code>Mac</code> and Linux` system; if used improperly, a <a href="https://en.wikipedia.org/wiki/Fork_bomb">fork bomb</a> could be malicious to the system.</p>
+<p>When choosing <code>MultisessionFuture</code> type, a listener will run in the background monitoring requests from the future sessions. However when running with <code>MulticoreFuture</code>, the listener could cause a fork bomb. Therefore, the listener will stop running in the background and some future processes may pause at pipeline B (see figure above, the procedure that requires interaction with the main session) if <code>run_in_master</code> is called. In such case, the future instance might never be resolved if the listener is not triggered. Users need to trigger the listeners manually.</p>
+<p>To trigger the listener manually, one only needs to “try to collect” the results, for instance, <code><a href="https://rdrr.io/pkg/future/man/value.html">value(x)</a></code>, <code><a href="https://rdrr.io/pkg/future/man/resolve.html">resolve(x)</a></code>, or <code><a href="https://rdrr.io/pkg/future/man/result.html">result(x)</a></code> will trigger the listener to collect the results. <code><a href="https://rdrr.io/pkg/future/man/resolved.html">resolved(x)</a></code> will also trigger the listener, but it does not block the main session. When trying to spawn new future instances, the listener will also trigger automatically.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/HenrikBengtsson/future">future</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dipterix/futurenow">futurenow</a></span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span><span class="op">(</span><span class="va">futurenow</span>, type <span class="op">=</span> <span class="st">'MulticoreFuture'</span>, workers <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
+
+<span class="va">func</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span><span class="op">{</span>
+  <span class="va">now</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span>
+  <span class="fu"><a href="https://rdrr.io/pkg/future/man/future.html">future</a></span><span class="op">(</span><span class="op">{</span>
+    <span class="fu"><a href="https://rdrr.io/r/base/Sys.sleep.html">Sys.sleep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span>
+    <span class="va">msg</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"Procedure A finished: %.1f s"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">now</span><span class="op">)</span>
+    <span class="fu"><a href="reference/futurenow.html">run_in_master</a></span><span class="op">(</span><span class="op">{</span>
+      <span class="va">msg</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">msg</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"Procedure B finished: %.1f s"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">now</span><span class="op">)</span><span class="op">)</span>
+      <span class="fu"><a href="reference/futurenow.html">register_name</a></span><span class="op">(</span><span class="va">msg</span><span class="op">)</span>
+    <span class="op">}</span>, local_vars <span class="op">=</span> <span class="st">'msg'</span><span class="op">)</span>
+    <span class="fu"><a href="https://rdrr.io/r/base/Sys.sleep.html">Sys.sleep</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>
+    <span class="va">msg</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">msg</span>, <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span><span class="op">(</span><span class="st">"Procedure C finished: %.1f s"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html">Sys.time</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="va">now</span><span class="op">)</span><span class="op">)</span>
+    <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="va">msg</span>, collapse <span class="op">=</span> <span class="st">'\n'</span><span class="op">)</span>
+  <span class="op">}</span><span class="op">)</span>
+<span class="op">}</span>
+
+<span class="co"># The listener still runs if single future is spawned </span>
+
+<span class="va">f</span> <span class="op">&lt;-</span> <span class="fu">func</span><span class="op">(</span><span class="op">)</span>
+
+<span class="co"># wait for at least 1 seconds</span>
+<span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/future/man/value.html">value</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span><span class="op">)</span>   
+<span class="co">#&gt; Procedure A finished: 1.0 s</span>
+<span class="co">#&gt; Procedure B finished: 1.1 s   &lt;--- B is executed right after A</span>
+<span class="co">#&gt; Procedure C finished: 3.2 s</span>
+
+<span class="co"># Creating two future instances and listener is stopped</span>
+
+<span class="va">f1</span> <span class="op">&lt;-</span> <span class="fu">func</span><span class="op">(</span><span class="op">)</span>; <span class="va">f2</span> <span class="op">&lt;-</span> <span class="fu">func</span><span class="op">(</span><span class="op">)</span>; <span class="va">f3</span> <span class="op">&lt;-</span> <span class="fu">func</span><span class="op">(</span><span class="op">)</span>; 
+<span class="fu">futurenow</span><span class="fu">:::</span><span class="fu">listener</span><span class="op">(</span><span class="op">)</span>
+
+<span class="co"># IMPORTANT, wait for at least 1 seconds</span>
+<span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/future/man/value.html">value</a></span><span class="op">(</span><span class="va">f3</span><span class="op">)</span><span class="op">)</span>
+<span class="co"># &gt; Procedure A finished: 1.0 s</span>
+<span class="co"># &gt; Procedure B finished: 9.2 s  &lt;--- I waited for 8 seconds to collect value</span>
+<span class="co"># &gt; Procedure C finished: 11.4 s</span></code></pre></div>
+</div>
 </div>
   </div>
 
@@ -205,12 +250,14 @@
 <h2>Developers</h2>
 <ul class="list-unstyled">
 <li>Zhengjia Wang <br><small class="roles"> Author, maintainer, copyright holder </small>  </li>
+<li><a href="authors.html">All authors...</a></li>
 </ul>
 </div>
 
   <div class="dev-status">
 <h2>Dev status</h2>
 <ul class="list-unstyled">
+<li><a href="https://www.tidyverse.org/lifecycle/#experimental"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
 <li><a href="https://github.com/dipterix/futurenow/actions"><img src="https://github.com/dipterix/futurenow/workflows/R-CMD-check/badge.svg" alt="R build status"></a></li>
 <li><a href="https://travis-ci.org/dipterix/futurenow"><img src="https://travis-ci.org/dipterix/futurenow.svg?branch=main" alt="Travis build status"></a></li>
 <li><a href="https://CRAN.R-project.org/package=futurenow"><img src="https://www.r-pkg.org/badges/version/futurenow" alt="CRAN status"></a></li>
